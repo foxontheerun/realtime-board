@@ -27,20 +27,10 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-
-    // Определяем направление зума (вверх - увеличение, вниз - уменьшение)
     const zoomDirection = e.deltaY > 0 ? -1 : 1;
-
-    // Шаг изменения зума
     const zoomStep = 10;
+    const newZoom = Math.max(1, Math.min(400, zoom + zoomDirection * zoomStep));
 
-    // Вычисляем новый зум (ограничиваем от 25% до 200%)
-    const newZoom = Math.max(
-      25,
-      Math.min(200, zoom + zoomDirection * zoomStep)
-    );
-
-    // Обновляем зум через callback
     onZoomChange(newZoom);
   };
 
@@ -89,10 +79,20 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle, #E5E5E5 1px, transparent 1px)`,
-            backgroundSize: "12px 12px",
-            transform: `scale(${zoomScale})`,
-            transformOrigin: "top left",
+            backgroundImage: `
+      linear-gradient(#f7f7f7ff 1px, transparent 1px),
+      linear-gradient(90deg, #f7f7f7ff 1px, transparent 1px),
+      linear-gradient(#f7f7f7ff 2px, transparent 2px),
+      linear-gradient(90deg, #f7f7f7ff 2px, transparent 2px)
+    `,
+            backgroundSize: `
+      ${25 * zoomScale}px ${25 * zoomScale}px,
+      ${25 * zoomScale}px ${25 * zoomScale}px,
+
+      ${100 * zoomScale}px ${100 * zoomScale}px,
+      ${100 * zoomScale}px ${100 * zoomScale}px
+    `,
+            backgroundPosition: "0 0",
           }}
         />
 
