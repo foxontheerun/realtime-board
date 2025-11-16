@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Canvas } from "./widgets/canvas/ui/Canvas";
 import type { Tool } from "./entities/block/model/types";
 import { TopBar } from "./widgets/top-bar/ui/TopBar";
 import { Toolbar } from "./widgets/toolbar/ui/Toolbar";

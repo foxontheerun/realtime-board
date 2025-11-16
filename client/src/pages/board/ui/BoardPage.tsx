@@ -11,6 +11,10 @@ export function BoardPage() {
   const [activeTool, setActiveTool] = useState<Tool>("pointer");
   const [zoom, setZoom] = useState(100);
 
+  const handleZoomChange = (newZoom: number) => {
+    setZoom(newZoom);
+  };
+
   if (!id) {
     return <div>Board not found</div>;
   }
@@ -18,9 +22,14 @@ export function BoardPage() {
   return (
     <div className="board-root">
       <TopBar zoom={zoom} setZoom={setZoom} />
-      <div className="flex-1 flex relative overflow-hidden">
+      <div className="flex-1 flex relative overflow-hidden bg-[#F5F5F5]">
         <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
-        <BoardCanvas boardId={id} activeTool={activeTool} zoom={zoom} />
+        <BoardCanvas
+          boardId={id}
+          activeTool={activeTool}
+          zoom={zoom}
+          onZoomChange={handleZoomChange}
+        />
       </div>
     </div>
   );
