@@ -1,0 +1,32 @@
+schema:
+  - schema.graphqls
+
+exec:
+  filename: generated.go
+  package: server
+
+model:
+  filename: models_gen.go
+  package: server
+
+resolver:
+  layout: single-file
+  filename: resolver.go
+  package: server
+
+models:
+  ID:
+    model:
+      - server.ID
+  String:
+    model:
+      - server.String
+  Int:
+    model:
+      - server.Int
+  Float:
+    model:
+      - server.Float
+  Boolean:
+    model:
+      - server.Boolean
