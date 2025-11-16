@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { gql } from "@apollo/client";
 import type { Shape } from "../../block/model/types";
 import { useQuery, useMutation } from "@apollo/client/react";
+import throttle from "lodash/throttle";
 
 const BOARD_QUERY = gql`
   query GetBoard($id: ID!) {
@@ -57,11 +58,11 @@ type UseBoardShapesResult = {
   loading: boolean;
   error: Error | null;
   updateShape: (shape: Shape) => void;
+  broadcastShape: (shape: Shape) => void;
 };
 
 export function useBoardShapes(boardId: string): UseBoardShapesResult {
   const [shapes, setShapes] = useState<Shape[]>([]);
-
   const clientIdRef = useRef<string>(crypto.randomUUID());
 
   const { data, loading, error, subscribeToMore } = useQuery(BOARD_QUERY, {
@@ -70,12 +71,35 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
 
   const [mutateShape] = useMutation(UPDATE_SHAPE_MUTATION);
 
+  const throttledBroadcast = useRef(
+    throttle((shape: Shape) => {
+      mutateShape({
+        variables: {
+          boardId,
+          shape: {
+            id: shape.id,
+            type: shape.type,
+            x: shape.x,
+            y: shape.y,
+            width: shape.width,
+            height: shape.height,
+            text: shape.text ?? null,
+          },
+          clientId: clientIdRef.current,
+        },
+      }).catch((e) => {
+        console.error("broadcast mutation error", e);
+      });
+    }, 50)
+  ).current;
+
   useEffect(() => {
     if (data?.board?.shapes) {
       setShapes(data.board.shapes);
     }
   }, [data]);
 
+  // Эффект для подписки на обновления от других пользователей
   useEffect(() => {
     if (!boardId) return;
 
@@ -85,15 +109,17 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
       updateQuery: (prev, { subscriptionData }) => {
         console.log("subscriptionData", subscriptionData, prev);
 
-        const shape = subscriptionData.data?.shapeUpdated;
-        if (!shape) return prev;
+        const updatedShape = subscriptionData.data?.shapeUpdated;
+        if (!updatedShape) return prev;
 
         setShapes((current) => {
-          const exists = current.some((s) => s.id === shape.id);
+          const exists = current.some((s) => s.id === updatedShape.id);
           if (exists) {
-            return current.map((s) => (s.id === shape.id ? shape : s));
+            return current.map((s) =>
+              s.id === updatedShape.id ? updatedShape : s
+            );
           }
-          return [...current, shape];
+          return [...current, updatedShape];
         });
 
         return prev;
@@ -127,6 +153,10 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
     });
   };
 
+  const broadcastShape = (shape: Shape) => {
+    throttledBroadcast(shape);
+  };
+
   const resultError = useMemo(
     () => (error ? new Error(error.message) : null),
     [error]
@@ -136,6 +166,7 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
     shapes,
     loading,
     error: resultError,
-    updateShape,
+    updateShape, // для финального обновления
+    broadcastShape, // для драга
   };
 }

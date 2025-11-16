@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ContextMenu } from "../../../features/shape-context-menu/ui/ContextMenu";
-import type { Shape, Tool } from "../../block/model/types";
+import type { Tool } from "../../block/model/types";
 import { ShapeBlock } from "../../block/ui/ShapeBlock";
 import { TextBlock } from "../../block/ui/TextBlock";
 import { ResizableDraggableShape } from "../../block/ui/ResizableDraggableShape";
@@ -10,10 +10,12 @@ interface BoardCanvasProps {
   boardId: string;
   activeTool: Tool;
   zoom: number;
+  onZoomChange: (zoom: number) => void;
 }
 
-export function BoardCanvas({ boardId, activeTool, zoom }: BoardCanvasProps) {
-  const { shapes, loading, error, updateShape } = useBoardShapes(boardId);
+export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
+  const { shapes, loading, error, updateShape, broadcastShape } =
+    useBoardShapes(boardId);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -23,11 +25,28 @@ export function BoardCanvas({ boardId, activeTool, zoom }: BoardCanvasProps) {
 
   const zoomScale = zoom / 100;
 
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+
+    // Определяем направление зума (вверх - увеличение, вниз - уменьшение)
+    const zoomDirection = e.deltaY > 0 ? -1 : 1;
+
+    // Шаг изменения зума
+    const zoomStep = 10;
+
+    // Вычисляем новый зум (ограничиваем от 25% до 200%)
+    const newZoom = Math.max(
+      25,
+      Math.min(200, zoom + zoomDirection * zoomStep)
+    );
+
+    // Обновляем зум через callback
+    onZoomChange(newZoom);
+  };
+
   const handleShapeClick = (id: string) => {
-    if (activeTool === "pointer") {
-      setSelectedId(id);
-      setContextMenu(null);
-    }
+    setSelectedId(id);
+    setContextMenu(null);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -63,7 +82,7 @@ export function BoardCanvas({ boardId, activeTool, zoom }: BoardCanvasProps) {
   }
 
   return (
-    <div className="flex-1 relative overflow-hidden">
+    <div className="flex-1 relative overflow-hidden " onWheel={handleWheel}>
       {/* Canvas container with shadow */}
       <div className="absolute inset-8 bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Grid dots background */}
@@ -92,11 +111,8 @@ export function BoardCanvas({ boardId, activeTool, zoom }: BoardCanvasProps) {
               shape={shape}
               zoom={zoom}
               isSelected={selectedId === shape.id}
-              onChange={(next: Shape) => {
-                // вместо локального setShapes → отправляем в хук,
-                // а тот уже обновит локальный стейт + отправит mutation
-                updateShape(next);
-              }}
+              onDrag={(shape) => broadcastShape(shape)}
+              onChange={(shape) => updateShape(shape)}
               onClick={() => handleShapeClick(shape.id)}
               onContextMenu={(e) => handleContextMenu(e, shape.id)}
             >

@@ -9,9 +9,7 @@ type BlockProps = {
 export const ShapeBlock: React.FC<BlockProps> = () => {
   return (
     <div
-      className={
-        "w-full h-full rounded-lg border bg-white shadow-sm box-border transition "
-      }
+      className={"w-full h-full rounded-lg  bg-white shadow-sm transition "}
     ></div>
   );
 };
