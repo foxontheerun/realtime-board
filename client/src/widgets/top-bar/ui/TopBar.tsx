@@ -6,8 +6,8 @@ interface TopBarProps {
 }
 
 export function TopBar({ zoom, setZoom }: TopBarProps) {
-  const handleZoomIn = () => setZoom(Math.min(zoom + 10, 200));
-  const handleZoomOut = () => setZoom(Math.max(zoom - 10, 25));
+  const handleZoomIn = () => setZoom(Math.min(zoom + 5, 400));
+  const handleZoomOut = () => setZoom(Math.max(zoom - 5, 1));
 
   return (
     <div className="h-14 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 shadow-sm">

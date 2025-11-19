@@ -32,9 +32,11 @@ export function ResizableDraggableShape({
         onChange({ ...shape, x: d.x, y: d.y });
       }}
       onDrag={(_e, d) => {
+        onClick?.();
         onDrag({ ...shape, x: d.x, y: d.y });
       }}
       onResize={(_e, _dir, ref, _delta, position) => {
+        onClick?.();
         onDrag({
           ...shape,
           width: ref.offsetWidth,
@@ -56,11 +58,11 @@ export function ResizableDraggableShape({
         right: true,
         bottom: true,
         bottomRight: true,
-        top: false,
-        left: false,
-        topLeft: false,
-        topRight: false,
-        bottomLeft: false,
+        top: true,
+        left: true,
+        topLeft: true,
+        topRight: true,
+        bottomLeft: true,
       }}
       style={{
         border: isSelected ? "2px solid #2563eb" : "1px solid #d4d4d8",
