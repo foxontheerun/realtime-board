@@ -26,6 +26,8 @@ export function ResizableDraggableShape({
 }: ResizableDraggableShapeProps) {
   const scale = zoom / 100;
 
+  const handleSize = 10;
+
   return (
     <Rnd
       size={{ width: shape.width, height: shape.height }}
@@ -76,9 +78,46 @@ export function ResizableDraggableShape({
         topRight: true,
         bottomLeft: true,
       }}
+      resizeHandleStyles={
+        isSelected
+          ? {
+              topLeft: {
+                borderRadius: "50%",
+                border: "1px solid #2563eb",
+                background: "#ffffff",
+              },
+              topRight: {
+                borderRadius: "50%",
+                border: "1px solid #2563eb",
+                background: "#ffffff",
+              },
+              bottomLeft: {
+                borderRadius: "50%",
+                border: "1px solid #2563eb",
+                background: "#ffffff",
+              },
+              bottomRight: {
+                borderRadius: "50%",
+                border: "1px solid #2563eb",
+                background: "#ffffff",
+              },
+            }
+          : {
+              top: { display: "none" },
+              bottom: { display: "none" },
+              left: { display: "none" },
+              right: { display: "none" },
+              topLeft: { display: "none" },
+              topRight: { display: "none" },
+              bottomLeft: { display: "none" },
+              bottomRight: { display: "none" },
+            }
+      }
       style={{
         border: isSelected ? "1px solid #2563eb" : "none",
         boxSizing: "border-box",
+        borderRadius: 6,
+        background: "transparent",
       }}
       onClick={(e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();

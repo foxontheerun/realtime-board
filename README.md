@@ -54,5 +54,5 @@ realtime-board/
 
 ## How to run localy
 
-- Front: `npm run dev`
+- Front: check README.md in client path
 - Back: `go run ./cmd/api`
