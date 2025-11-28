@@ -1,13 +1,21 @@
 import { useEffect, useRef } from "react";
-import { Copy, Trash2, Lock, Unlock } from "lucide-react";
+import { Copy, Trash2, Lock, Unlock, MoveUp, MoveDown } from "lucide-react";
 
 interface ContextMenuProps {
   x: number;
   y: number;
   onClose: () => void;
+  onBringToFront: () => void;
+  onSendToBack: () => void;
 }
 
-export function ContextMenu({ x, y, onClose }: ContextMenuProps) {
+export function ContextMenu({
+  x,
+  y,
+  onClose,
+  onBringToFront,
+  onSendToBack,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,11 +30,22 @@ export function ContextMenu({ x, y, onClose }: ContextMenuProps) {
   }, [onClose]);
 
   const menuItems = [
-    { icon: <Copy className="w-4 h-4" />, label: "Copy", shortcut: "⌘C" },
-    { icon: <Trash2 className="w-4 h-4" />, label: "Delete", shortcut: "⌫" },
+    { icon: <Copy className="w-4 h-4" />, label: "Copy" },
+    { icon: <Trash2 className="w-4 h-4" />, label: "Delete" },
     { divider: true },
-    { icon: <Lock className="w-4 h-4" />, label: "Lock", shortcut: "⌘L" },
-    { icon: <Unlock className="w-4 h-4" />, label: "Unlock", shortcut: "⌘⇧L" },
+    {
+      icon: <MoveUp className="w-4 h-4" />,
+      label: "На слой выше",
+      onClick: onBringToFront,
+    },
+    {
+      icon: <MoveDown className="w-4 h-4" />,
+      label: "На слой ниже",
+      onClick: onSendToBack,
+    },
+    { divider: true },
+    { icon: <Lock className="w-4 h-4" />, label: "Lock" },
+    { icon: <Unlock className="w-4 h-4" />, label: "Unlock" },
   ];
 
   return (
@@ -42,7 +61,7 @@ export function ContextMenu({ x, y, onClose }: ContextMenuProps) {
           <button
             key={index}
             className="w-full px-3 py-2 flex items-center justify-between hover:bg-[#F5F5F5] transition-colors text-left"
-            onClick={onClose}
+            onClick={item.onClick || onClose}
           >
             <div className="flex items-center gap-3 text-[#1A1A1A]">
               <span className="text-[#666666]">{item.icon}</span>

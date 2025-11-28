@@ -6,10 +6,13 @@ type BlockProps = {
   isSelected?: boolean;
 };
 
-export const ShapeBlock: React.FC<BlockProps> = () => {
+export const ShapeBlock: React.FC<BlockProps> = ({ shape }) => {
   return (
     <div
       className={"w-full h-full rounded-lg  bg-white shadow-sm transition "}
+      style={{
+        background: shape.fill || "auto",
+      }}
     ></div>
   );
 };

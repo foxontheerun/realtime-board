@@ -25,6 +25,7 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
     error,
     broadcastTransientPosition,
     saveFinalPosition,
+    changeZIndex,
   } = useBoardShapes(boardId);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -62,8 +63,6 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
   const closeContextMenu = () => setContextMenu(null);
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-
     const rect = e.currentTarget.getBoundingClientRect();
 
     const mouse = {
@@ -98,6 +97,18 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
     onZoomChange(newZoomPercent);
   };
 
+  const handleBringToFront = () => {
+    if (!selectedId) return;
+    changeZIndex(selectedId, "front");
+    setContextMenu(null);
+  };
+
+  const handleSendToBack = () => {
+    if (!selectedId) return;
+    changeZIndex(selectedId, "back");
+    setContextMenu(null);
+  };
+
   if (loading)
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -110,6 +121,10 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
         Ошибка: {error.message}
       </div>
     );
+
+  const orderedShapes = [...shapes].sort(
+    (a, b) => (a?.zIndex ?? 0) - (b?.zIndex ?? 0)
+  );
 
   return (
     <div className="flex-1 relative overflow-hidden" onWheel={handleWheel}>
@@ -124,7 +139,7 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
           }}
           onMouseDown={handleCanvasMouseDown}
         >
-          {shapes.map((shape) => (
+          {orderedShapes.map((shape) => (
             <ResizableDraggableShape
               key={shape.id}
               shape={shape}
@@ -138,7 +153,7 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
               {shape.type === "RECT" ? (
                 <ShapeBlock shape={shape} />
               ) : (
-                <TextBlock content={shape.text || ""} />
+                <TextBlock shape={shape} />
               )}
             </ResizableDraggableShape>
           ))}
@@ -150,6 +165,8 @@ export function BoardCanvas({ boardId, zoom, onZoomChange }: BoardCanvasProps) {
           x={contextMenu.x}
           y={contextMenu.y}
           onClose={closeContextMenu}
+          onBringToFront={handleBringToFront}
+          onSendToBack={handleSendToBack}
         />
       )}
     </div>

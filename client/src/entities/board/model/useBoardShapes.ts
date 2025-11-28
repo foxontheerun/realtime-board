@@ -3,6 +3,7 @@ import { gql } from "@apollo/client";
 import { useQuery, useMutation, useSubscription } from "@apollo/client/react";
 import throttle from "lodash/throttle";
 import type { Shape } from "../../block/model/types";
+import type { UseBoardShapesResult } from "./types";
 
 // ------------ GQL ------------- //
 
@@ -100,16 +101,6 @@ const SHAPE_UPDATED_SUBSCRIPTION = gql`
     }
   }
 `;
-
-// ------------ hook API ------------- //
-
-type UseBoardShapesResult = {
-  shapes: Shape[];
-  loading: boolean;
-  error: Error | null;
-  broadcastTransientPosition: (shape: Shape) => void;
-  saveFinalPosition: (shape: Shape) => void;
-};
 
 export function useBoardShapes(boardId: string): UseBoardShapesResult {
   const [shapes, setShapes] = useState<Shape[]>([]);
@@ -242,6 +233,50 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
     });
   };
 
+  const changeZIndex = (id: string, mode: "front" | "back") => {
+    setShapes((current) => {
+      if (current.length === 0) return current;
+
+      const target = current.find((s) => s.id === id);
+
+      if (!target) return current;
+
+      const zValues = current.map((s) => s.zIndex ?? 0);
+      const maxZ = Math.max(...zValues);
+      const minZ = Math.min(...zValues);
+
+      let nextZ: number;
+      if (mode === "front") {
+        nextZ = maxZ + 1;
+      } else {
+        // "back"
+        nextZ = minZ - 1;
+      }
+
+      console.log("nextZ", nextZ);
+
+      const nextShapes = current.map((s) =>
+        s.id === id ? { ...s, zIndex: nextZ } : s
+      );
+
+      // шлём patch на бэк
+      updateShapeMutation({
+        variables: {
+          boardId,
+          shape: {
+            id,
+            zIndex: nextZ,
+          },
+          clientId: clientIdRef.current,
+        },
+      }).catch((e) => {
+        console.error("changeZIndex mutation error", e);
+      });
+
+      return nextShapes;
+    });
+  };
+
   const resultError = useMemo(
     () => (error ? new Error(error.message) : null),
     [error]
@@ -253,5 +288,6 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
     error: resultError,
     broadcastTransientPosition,
     saveFinalPosition,
+    changeZIndex,
   };
 }
