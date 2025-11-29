@@ -78,9 +78,6 @@ export function ContextMenu({
               <span className="text-[#666666]">{item.icon}</span>
               <span>{item.label}</span>
             </div>
-            {item.shortcut && (
-              <span className="text-[#999999]">{item.shortcut}</span>
-            )}
           </button>
         )
       )}

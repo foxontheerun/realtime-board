@@ -32,29 +32,7 @@ export function ResizableDraggableShape({
       size={{ width: shape.width, height: shape.height }}
       position={{ x: shape.x, y: shape.y }}
       disableDragging={isLocked}
-      enableResizing={
-        isLocked
-          ? {
-              topLeft: false,
-              top: false,
-              topRight: false,
-              right: false,
-              bottomRight: false,
-              bottom: false,
-              bottomLeft: false,
-              left: false,
-            }
-          : {
-              topLeft: true,
-              top: false,
-              topRight: true,
-              right: false,
-              bottomRight: true,
-              bottom: false,
-              bottomLeft: true,
-              left: false,
-            }
-      }
+      enableResizing={getResizingSettings(isLocked)}
       // drag
       onDrag={(_e, d) => {
         onClick?.();
@@ -135,3 +113,14 @@ function HandleDot({ className }: { className?: string }) {
     />
   );
 }
+
+const getResizingSettings = (isLocked: boolean) => ({
+  topLeft: !isLocked,
+  top: !isLocked,
+  topRight: !isLocked,
+  right: !isLocked,
+  bottomRight: !isLocked,
+  bottom: !isLocked,
+  bottomLeft: !isLocked,
+  left: !isLocked,
+});

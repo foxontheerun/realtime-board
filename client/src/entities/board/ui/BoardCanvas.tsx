@@ -1,13 +1,15 @@
 import { useRef, useState } from "react";
 import { ContextMenu } from "../../../features/shape-context-menu/ui/ContextMenu";
 import type { Tool } from "../../block/model/types";
-import { ShapeBlock } from "../../block/ui/ShapeBlock";
-import { TextBlock } from "../../block/ui/TextBlock";
-import { ResizableDraggableShape } from "../../block/ui/ResizableDraggableShape";
 import { useBoardShapes } from "../model/useBoardShapes";
 import { calculateZoomTransform } from "../../../shared/lib/zoom";
 import { useGridSystem } from "../model/useGridSystem";
-import { EllipseBlock } from "../../block/ui/EllipseBlock";
+import {
+  ResizableDraggableShape,
+  ShapeBlock,
+  TextBlock,
+  EllipseBlock,
+} from "../../block";
 
 interface BoardCanvasProps {
   boardId: string;

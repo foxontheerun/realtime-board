@@ -3,7 +3,14 @@ import { gql } from "@apollo/client";
 import { useQuery, useMutation, useSubscription } from "@apollo/client/react";
 import throttle from "lodash/throttle";
 import type { Shape } from "../../block/model/types";
-import type { UseBoardShapesResult } from "./types";
+import type {
+  BoardQueryResponse,
+  ShapeInput,
+  ShapeMovedSubscriptionResponse,
+  ShapeUpdatedSubscriptionResponse,
+  TransientShapeInput,
+  UseBoardShapesResult,
+} from "./types";
 
 // ------------ GQL ------------- //
 
@@ -106,7 +113,7 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const clientIdRef = useRef<string>(crypto.randomUUID());
 
-  const { data, loading, error } = useQuery(BOARD_QUERY, {
+  const { data, loading, error } = useQuery<BoardQueryResponse>(BOARD_QUERY, {
     variables: { id: boardId },
   });
 
@@ -125,10 +132,13 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
 
   // -------- subscriptions: transient move -------- //
 
-  const { data: movedData } = useSubscription(SHAPE_MOVED_SUBSCRIPTION, {
-    variables: { boardId },
-    skip: !boardId,
-  });
+  const { data: movedData } = useSubscription<ShapeMovedSubscriptionResponse>(
+    SHAPE_MOVED_SUBSCRIPTION,
+    {
+      variables: { boardId },
+      skip: !boardId,
+    }
+  );
 
   useEffect(() => {
     const moved = movedData?.shapeMoved;
@@ -151,10 +161,14 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
 
   // -------- subscriptions: persisted update -------- //
 
-  const { data: updatedData } = useSubscription(SHAPE_UPDATED_SUBSCRIPTION, {
-    variables: { boardId },
-    skip: !boardId,
-  });
+  const { data: updatedData } =
+    useSubscription<ShapeUpdatedSubscriptionResponse>(
+      SHAPE_UPDATED_SUBSCRIPTION,
+      {
+        variables: { boardId },
+        skip: !boardId,
+      }
+    );
 
   useEffect(() => {
     const updated = updatedData?.shapeUpdated;
@@ -182,7 +196,7 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
             y: shape.y,
             width: shape.width,
             height: shape.height,
-          },
+          } as TransientShapeInput,
           clientId: clientIdRef.current,
         },
       }).catch((e) => {
@@ -225,13 +239,14 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
           fill: shape.fill ?? null,
           stroke: shape.stroke ?? null,
           strokeWidth: shape.strokeWidth ?? null,
-        },
+        } as ShapeInput,
         clientId: clientIdRef.current,
       },
     }).catch((e) => {
       console.error("updateShape mutation error", e);
     });
   };
+
   const toggleLock = (id: string) => {
     setShapes((current) => {
       const target = current.find((s) => s.id === id);
@@ -250,7 +265,7 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
           shape: {
             id,
             locked: nextLocked,
-          },
+          } as ShapeInput,
           clientId: clientIdRef.current,
         },
       }).catch((e) => {
@@ -281,8 +296,6 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
         nextZ = minZ - 1;
       }
 
-      console.log("nextZ", nextZ);
-
       const nextShapes = current.map((s) =>
         s.id === id ? { ...s, zIndex: nextZ } : s
       );
@@ -294,7 +307,7 @@ export function useBoardShapes(boardId: string): UseBoardShapesResult {
           shape: {
             id,
             zIndex: nextZ,
-          },
+          } as ShapeInput,
           clientId: clientIdRef.current,
         },
       }).catch((e) => {

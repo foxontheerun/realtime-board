@@ -1,9 +1,9 @@
 import { useParams } from "react-router-dom";
-import { BoardCanvas } from "../../../entities/board/ui/BoardCanvas";
-import type { Tool } from "../../../entities/block/model/types";
-import { Toolbar } from "../../../widgets/toolbar/ui/Toolbar";
-import { TopBar } from "../../../widgets/top-bar/ui/TopBar";
+
 import { useState } from "react";
+import type { Tool } from "../../../entities/block";
+import { BoardCanvas } from "../../../entities/board";
+import { TopBar, Toolbar } from "../../../widgets";
 
 export function BoardPage() {
   const { id } = useParams<{ id: string }>();
