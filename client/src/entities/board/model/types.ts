@@ -36,8 +36,15 @@ export interface ShapeMovedSubscriptionResponse {
   };
 }
 
-export interface ShapeUpdatedSubscriptionResponse {
-  shapeUpdated: Shape;
+export type ShapeEventType = "CREATED" | "UPDATED" | "DELETED";
+
+export interface ShapeEvent {
+  type: ShapeEventType;
+  shape: Shape;
+}
+
+export interface ShapeEventsSubscriptionResponse {
+  shapeEvents: ShapeEvent;
 }
 
 // Mutation input types

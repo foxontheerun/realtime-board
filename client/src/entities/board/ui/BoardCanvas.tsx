@@ -228,6 +228,7 @@ export function BoardCanvas({
   const handleDeleteClick = () => {
     if (!selectedId) return;
     deleteShape(selectedId);
+    setSelectedId(null);
     setContextMenu(null);
   };
 
