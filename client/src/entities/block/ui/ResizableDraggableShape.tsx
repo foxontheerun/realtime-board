@@ -13,6 +13,7 @@ interface ResizableDraggableShapeProps {
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent<HTMLDivElement>) => void;
   children: React.ReactNode;
+  disableDrag: boolean;
 }
 
 export const ResizableDraggableShape = React.memo(
@@ -25,6 +26,7 @@ export const ResizableDraggableShape = React.memo(
     onClick,
     onContextMenu,
     children,
+    disableDrag,
   }: ResizableDraggableShapeProps) => {
     const scale = zoom / 100;
     const isLocked = !!shape.locked;
@@ -33,7 +35,7 @@ export const ResizableDraggableShape = React.memo(
       <Rnd
         size={{ width: shape.width, height: shape.height }}
         position={{ x: shape.x, y: shape.y }}
-        disableDragging={isLocked}
+        disableDragging={isLocked || disableDrag}
         enableResizing={getResizingSettings(isLocked)}
         // drag
         onDrag={(_e, d) => {

@@ -12,7 +12,6 @@ export const ShapeBlock = React.memo(({ shape }: ShapeBlockProps) => {
 
   return (
     <div className="relative w-full h-full group">
-      {/* Rectangle shape */}
       <div
         className={`w-full h-full rounded-[8px] transition-all shadow-sm hover:shadow-md `}
         style={{
