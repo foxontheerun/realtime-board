@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { ContextMenu } from "../../../features/shape-context-menu/ui/ContextMenu";
 import type { Shape, Tool } from "../../block/model/types";
 import { useBoardShapes } from "../model/useBoardShapes";
@@ -52,6 +52,7 @@ export function BoardCanvas({
     width: number;
     height: number;
   } | null>(null);
+
   const creationStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const zoomScale = zoom / 100;
@@ -65,21 +66,32 @@ export function BoardCanvas({
     setContextMenu(null);
   };
 
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // if (e.target !== e.currentTarget) return;
+  // Получаем координаты в системе доски (shape.x / shape.y)
+  // transform на внутреннем div: translate(offset) scale(zoomScale)
+  // screen = zoomScale * (board + offset)
+  const getBoardCoords = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return { x: 0, y: 0 };
 
+    const rect = containerRef.current.getBoundingClientRect();
+    const screenX = e.clientX - rect.left;
+    const screenY = e.clientY - rect.top;
+
+    const boardX = (screenX - offset.x) / zoomScale;
+    const boardY = (screenY - offset.y) / zoomScale;
+
+    return { x: boardX, y: boardY };
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool !== "rectangle" && activeTool !== "text") return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
+    const { x, y } = getBoardCoords(e);
 
-    const boardX = (e.clientX - rect.left) / zoomScale;
-    const boardY = (e.clientY - rect.top) / zoomScale;
-
-    creationStartRef.current = { x: boardX, y: boardY };
+    creationStartRef.current = { x, y };
 
     setDraftShape({
-      x: boardX,
-      y: boardY,
+      x,
+      y,
       width: 0,
       height: 0,
     });
@@ -91,10 +103,7 @@ export function BoardCanvas({
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!creationStartRef.current) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const boardX = (e.clientX - rect.left) / zoomScale;
-    const boardY = (e.clientY - rect.top) / zoomScale;
-
+    const { x: boardX, y: boardY } = getBoardCoords(e);
     const start = creationStartRef.current;
 
     const dx = boardX - start.x;
@@ -161,32 +170,30 @@ export function BoardCanvas({
   const closeContextMenu = () => setContextMenu(null);
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (!containerRef.current) return;
 
+    const rect = containerRef.current.getBoundingClientRect();
     const mouse = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
 
-    const zoomScale = zoom / 100;
+    const currentScale = zoom / 100;
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-
-    const newScale = zoomScale * zoomFactor;
+    const newScale = currentScale * zoomFactor;
 
     let newZoomPercent = Math.round(newScale * 100);
     newZoomPercent = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoomPercent));
 
-    if (newZoomPercent === zoom) {
-      return;
-    }
+    if (newZoomPercent === zoom) return;
 
     const clampedScale = newZoomPercent / 100;
 
     const { offset: newOffset } = calculateZoomTransform({
       mouse,
-      zoom: zoomScale,
+      zoom: currentScale,
       offset,
-      zoomFactor: clampedScale / zoomScale,
+      zoomFactor: clampedScale / currentScale,
     });
 
     skipCenteringRef.current = true;
@@ -222,11 +229,9 @@ export function BoardCanvas({
 
   const handleCopyClick = () => {};
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      setSelectedId(null);
-      setContextMenu(null);
-    }
+  const handleCanvasClick = () => {
+    setSelectedId(null);
+    setContextMenu(null);
   };
 
   const handleShapeContextMenu = (id: string, e: React.MouseEvent) => {
@@ -235,7 +240,6 @@ export function BoardCanvas({
     setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
-  // оборачиваем в useCallback, чтобы сами функции были стабильны
   const handleShapeClickCb = useCallback(handleShapeClick, []);
   const handleShapeContextMenuCb = useCallback(handleShapeContextMenu, []);
   const handleTextChange = useCallback(
@@ -248,18 +252,21 @@ export function BoardCanvas({
   const selectedShape = shapes.find((s) => s.id === selectedId);
   const isSelectedLocked = !!selectedShape?.locked;
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         Загружаем доску…
       </div>
     );
-  if (error)
+  }
+
+  if (error) {
     return (
       <div className="flex-1 flex items-center justify-center text-red-500">
         Ошибка: {error.message}
       </div>
     );
+  }
 
   const orderedShapes = [...shapes].sort(
     (a, b) => (a?.zIndex ?? 0) - (b?.zIndex ?? 0)
@@ -268,47 +275,56 @@ export function BoardCanvas({
   return (
     <div className="flex-1 relative overflow-hidden" onWheel={handleWheel}>
       <div className="absolute inset-8 bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* сетка */}
         <div className="absolute inset-0" style={gridStyles} />
+
+        {/* контейнер по всей области доски, без transform */}
         <div
           ref={containerRef}
-          onClick={handleCanvasClick}
           className="absolute inset-0"
-          style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoomScale})`,
-            transformOrigin: "0 0",
-          }}
+          onClick={handleCanvasClick}
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
         >
-          {draftShape &&
-            (activeTool === "rectangle" || activeTool === "text") && (
-              <div
-                className="pointer-events-none border-2 border-dashed border-blue-500/80 bg-blue-500/5"
-                style={{
-                  position: "absolute",
-                  left: draftShape.x,
-                  top: draftShape.y,
-                  width: draftShape.width,
-                  height: draftShape.height,
-                  zIndex: 1000,
-                }}
-              />
-            )}
+          {/* а тут уже сам "мир доски", который двигаем и масштабируем */}
+          <div
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoomScale})`,
+              transformOrigin: "0 0",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            {draftShape &&
+              (activeTool === "rectangle" || activeTool === "text") && (
+                <div
+                  className="pointer-events-none border-2 border-dashed border-blue-500/80 bg-blue-500/5"
+                  style={{
+                    position: "absolute",
+                    left: draftShape.x,
+                    top: draftShape.y,
+                    width: draftShape.width,
+                    height: draftShape.height,
+                    zIndex: 1000,
+                  }}
+                />
+              )}
 
-          {orderedShapes.map((shape) => (
-            <ShapeItem
-              key={shape.id}
-              shape={shape}
-              zoom={zoom}
-              isSelected={selectedId === shape.id}
-              onDragLocal={broadcastTransientPosition}
-              onDragEnd={saveFinalPosition}
-              onShapeClick={handleShapeClickCb}
-              onShapeContextMenu={handleShapeContextMenuCb}
-              onTextChange={handleTextChange}
-            />
-          ))}
+            {orderedShapes.map((shape) => (
+              <ShapeItem
+                key={shape.id}
+                shape={shape}
+                zoom={zoom}
+                isSelected={selectedId === shape.id}
+                onDragLocal={broadcastTransientPosition}
+                onDragEnd={saveFinalPosition}
+                onShapeClick={handleShapeClickCb}
+                onShapeContextMenu={handleShapeContextMenuCb}
+                onTextChange={handleTextChange}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

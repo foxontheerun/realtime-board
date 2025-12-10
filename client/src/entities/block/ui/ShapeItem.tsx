@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import {
   ResizableDraggableShape,
   ShapeBlock,
@@ -29,6 +29,8 @@ function ShapeItemComponent({
   onShapeContextMenu,
   onTextChange,
 }: ShapeItemProps) {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+
   const handleClick = useCallback(() => {
     onShapeClick(shape.id);
   }, [onShapeClick, shape.id]);
@@ -47,6 +49,10 @@ function ShapeItemComponent({
     [onTextChange, shape]
   );
 
+  const handlenSetEditing = (isEdit: boolean) => {
+    setIsEditing(isEdit);
+  };
+
   return (
     <ResizableDraggableShape
       shape={shape}
@@ -56,10 +62,15 @@ function ShapeItemComponent({
       onDragEnd={onDragEnd}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
+      disableDrag={isEditing}
     >
       {shape.type === "RECT" && <ShapeBlock shape={shape} />}
       {shape.type === "TEXT" && (
-        <TextBlock shape={shape} onChangeText={handleChangeText} />
+        <TextBlock
+          shape={shape}
+          onChangeText={handleChangeText}
+          onSetEditing={handlenSetEditing}
+        />
       )}
       {shape.type === "ELLIPSE" && <EllipseBlock shape={shape} />}
     </ResizableDraggableShape>
