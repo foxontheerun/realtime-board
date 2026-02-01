@@ -32,6 +32,13 @@ export class CameraController {
     this.notify();
   }
 
+  public screenToWorld(screenX: number, screenY: number) {
+    return {
+      x: (screenX - this.offsetX) / this.zoom,
+      y: (screenY - this.offsetY) / this.zoom,
+    };
+  }
+
   public get state(): CameraState {
     return {
       zoom: this.zoom,

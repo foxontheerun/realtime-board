@@ -12,23 +12,34 @@ interface BoardCanvasNewProps {
 export function BoardCanvasNew({ setCamera }: BoardCanvasNewProps) {
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
+  const dragCanvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+
   const runtimeRef = useRef<BoardRuntime | null>(null);
 
   useEffect(() => {
-    if (!gridCanvasRef.current || !mainCanvasRef.current) return;
+    if (
+      !gridCanvasRef.current ||
+      !mainCanvasRef.current ||
+      !dragCanvasRef.current ||
+      !overlayCanvasRef.current
+    )
+      return;
 
-    // Передаем оба канваса в рантайм
     runtimeRef.current = new BoardRuntime(
       gridCanvasRef.current,
-      mainCanvasRef.current
+      mainCanvasRef.current,
+      dragCanvasRef.current,
+      overlayCanvasRef.current
     );
+
     setCamera(runtimeRef.current.camera);
 
     const observer = new ResizeObserver(() => {
       runtimeRef.current?.updateSize();
     });
 
-    observer.observe(mainCanvasRef.current); // Следим за основным
+    observer.observe(mainCanvasRef.current);
 
     return () => {
       observer.disconnect();
@@ -52,16 +63,29 @@ export function BoardCanvasNew({ setCamera }: BoardCanvasNewProps) {
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-slate-50">
-      {/* Слой 0: Сетка */}
       <canvas
         ref={gridCanvasRef}
-        className="absolute inset-0 pointer-events-none w-full h-full" // Сетка не должна ловить клики
+        className="absolute inset-0 pointer-events-none w-full h-full"
       />
-      {/* Слой 1: Фигуры и события */}
       <canvas
         ref={mainCanvasRef}
         className="absolute inset-0 touch-none w-full h-full"
+      />
+      <canvas
+        ref={dragCanvasRef}
+        onMouseDown={(e) =>
+          runtimeRef.current?.handleMouseDown(e.clientX, e.clientY)
+        }
+        onMouseMove={(e) =>
+          runtimeRef.current?.handleMouseMove(e.clientX, e.clientY)
+        }
+        onMouseUp={() => runtimeRef.current?.handleMouseUp()}
+        className="absolute inset-0 touch-none w-full h-full  "
         onWheel={handleWheel}
+      />
+      <canvas
+        ref={overlayCanvasRef}
+        className="absolute inset-0 pointer-events-none  w-full h-full "
       />
     </div>
   );

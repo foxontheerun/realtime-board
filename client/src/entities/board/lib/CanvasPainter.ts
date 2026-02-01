@@ -7,19 +7,22 @@ export class CanvasPainter {
     rect: Shape,
     camera: CameraState
   ) {
-    const { fill = "blue", stroke = "black" } = rect;
-    const radius = 8;
+    const { fill = "blue", stroke = "", strokeWidth = 1, radius = 8 } = rect;
 
     const x = rect.x * camera.zoom + camera.offsetX;
     const y = rect.y * camera.zoom + camera.offsetY;
 
     const width = rect.width * camera.zoom;
     const height = rect.height * camera.zoom;
+    const baseLineWidth = strokeWidth || 2;
 
     if (radius <= 0) {
-      ctx.fillStyle = fill as string;
-      ctx.fillRect(x, y, width, height);
+      if (fill) {
+        ctx.fillStyle = fill as string;
+        ctx.fillRect(x, y, width, height);
+      }
       ctx.strokeStyle = stroke as string;
+      ctx.lineWidth = baseLineWidth;
       ctx.strokeRect(x, y, width, height);
     } else {
       const r = radius * camera.zoom;
@@ -35,10 +38,16 @@ export class CanvasPainter {
       ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
 
-      ctx.fillStyle = fill as string;
-      ctx.fill();
+      if (fill) {
+        ctx.fillStyle = fill as string;
+        ctx.fill();
+      }
+
       ctx.strokeStyle = stroke as string;
+      ctx.lineWidth = baseLineWidth;
       ctx.stroke();
     }
   }
+
+  public static drawBorder() {}
 }

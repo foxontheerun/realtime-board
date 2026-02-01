@@ -1,14 +1,14 @@
 import type { Shape } from "../../block";
-import type { CameraState } from "./GridLayer";
 import { CanvasPainter } from "../lib/CanvasPainter";
 import type { _Shape } from "../model/EntityManager";
+import type { CameraState } from "./GridLayer";
 
-export class StaticLayer {
+export class DragLayer {
   draw(ctx: CanvasRenderingContext2D, camera: CameraState, shapes: _Shape[]) {
     ctx.save();
 
     shapes.forEach((s) => {
-      if (s.state != "static") return;
+      if (s.state != "dragging") return;
       CanvasPainter.drawRectShape(ctx, s as unknown as Shape, camera);
     });
 

@@ -32,8 +32,6 @@ export class GridLayer {
     camera: CameraState,
     layer: GridLayerConfig
   ) {
-    // console.log("drawLayer", layer);
-
     const { size, opacity, lineWidth } = layer;
 
     ctx.globalAlpha = opacity;
@@ -42,7 +40,7 @@ export class GridLayer {
     const width = camera.viewportWidth;
     const height = camera.viewportHeight;
 
-    // 1. Вычисляем остаток: где относительно левого/верхнего края
+    // Вычисляем остаток: где относительно левого/верхнего края
     // должна пройти первая линия "от нуля"
     // Используем положительный остаток, чтобы сетка не прыгала
     let startX = camera.offsetX % size;
@@ -52,25 +50,20 @@ export class GridLayer {
     if (startX > 0) startX -= size;
     if (startY > 0) startY -= size;
 
-    // 2. БАТЧИНГ: Рисуем всю сетку за один проход "пером"
     ctx.beginPath();
 
-    // Вертикальные линии
     for (let x = startX; x < width; x += size) {
-      // 0.5 — хак для четкости 1px линий (чтобы не попадать между пикселями)
       const roundX = Math.round(x) + 0.5;
       ctx.moveTo(roundX, 0);
       ctx.lineTo(roundX, height);
     }
 
-    // Горизонтальные линии
     for (let y = startY; y < height; y += size) {
       const roundY = Math.round(y) + 0.5;
       ctx.moveTo(0, roundY);
       ctx.lineTo(width, roundY);
     }
 
-    // 3. Один раз отрисовываем всё накопленное
     ctx.stroke();
   }
 }
