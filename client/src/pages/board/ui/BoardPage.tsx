@@ -5,6 +5,7 @@ import type { Tool } from "../../../entities/block";
 import { BoardCanvas } from "../../../entities/board";
 import { TopBar, Toolbar } from "../../../widgets";
 import type { StickyColorId } from "../../../entities/block/model/stickyPresets";
+import { BoardCanvasNew } from "../../../entities/board/ui/BoardCanvasNew";
 
 export function BoardPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,14 +33,15 @@ export function BoardPage() {
           activeStickyColorId={activeStickyColorId}
           setActiveStickyColorId={setActiveStickyColorId}
         />
-        <BoardCanvas
+        <BoardCanvasNew></BoardCanvasNew>
+        {/* <BoardCanvas
           setActiveTool={setActiveTool}
           boardId={id}
           activeTool={activeTool}
           zoom={zoom}
           onZoomChange={handleZoomChange}
           stickyColorId={activeStickyColorId}
-        />
+        /> */}
       </div>
     </div>
   );
