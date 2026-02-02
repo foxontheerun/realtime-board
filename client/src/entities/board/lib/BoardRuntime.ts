@@ -4,7 +4,6 @@ import { StaticLayer } from "../layers/StaticLayer";
 import { DragLayer } from "../layers/DragLayer";
 import { EntityManager, type _Shape } from "../model/EntityManager";
 import { Overlay } from "../layers/Overlay";
-import { ImagePainter } from "./ImagePainter";
 
 export class BoardRuntime {
   camera = new CameraController();
@@ -27,6 +26,8 @@ export class BoardRuntime {
 
   private draggedShape: _Shape | null = null;
   private dragStartOffset = { x: 0, y: 0 };
+
+  private rafId: number | null = null;
 
   constructor(
     gridCanvas: HTMLCanvasElement,
@@ -51,6 +52,16 @@ export class BoardRuntime {
     });
 
     this.drawAll();
+  }
+
+  requestDraw() {
+    if (this.rafId !== null) return;
+
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+
+      this.requestDraw();
+    });
   }
 
   updateSize() {

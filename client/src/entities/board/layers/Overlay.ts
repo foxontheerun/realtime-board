@@ -1,7 +1,6 @@
 import type { Shape } from "../../block";
 import { CanvasPainter } from "../lib/CanvasPainter";
 import type { _Shape } from "../model/EntityManager";
-import type { CameraState } from "./GridLayer";
 
 const BORDER_COLOR = "#92c1ffff";
 const STROKE_WIDTH = 3;

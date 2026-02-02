@@ -1,5 +1,4 @@
 import type { Shape } from "../../block";
-import type { CameraState } from "./GridLayer";
 import { CanvasPainter } from "../lib/CanvasPainter";
 import type { _Shape } from "../model/EntityManager";
 
@@ -13,7 +12,7 @@ export class StaticLayer {
           break;
         case "RECT":
         default:
-          CanvasPainter.drawRectShape(ctx, s as unknown as Shape);
+          CanvasPainter.drawSticker(ctx, s as unknown as Shape);
       }
     });
 

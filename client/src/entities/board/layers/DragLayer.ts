@@ -13,7 +13,7 @@ export class DragLayer {
           break;
         case "RECT":
         default:
-          CanvasPainter.drawRectShape(ctx, s as unknown as Shape);
+          CanvasPainter.drawSticker(ctx, s as unknown as Shape);
       }
     });
 

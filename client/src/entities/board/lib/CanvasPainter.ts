@@ -1,5 +1,5 @@
 import type { Shape } from "../../block";
-import type { CameraState } from "../layers/GridLayer";
+import { adjustHexBrightness } from "./colorUtils";
 
 export class CanvasPainter {
   public static drawRectShape(ctx: CanvasRenderingContext2D, rect: Shape) {
@@ -88,6 +88,68 @@ export class CanvasPainter {
     }
 
     ctx.closePath();
+    ctx.restore();
+  }
+
+  public static drawSticker(
+    ctx: CanvasRenderingContext2D,
+    shape: Shape,
+    options?: {
+      shadowColor?: string;
+      shadowOpacity?: number;
+      showShadow?: boolean;
+    }
+  ) {
+    const { shadowColor = "rgba(90, 112, 145, 0.36)", showShadow = true } =
+      options || {};
+
+    ctx.save();
+
+    this.drawStickerWithShadow(ctx, shape, shadowColor, showShadow);
+
+    ctx.restore();
+  }
+
+  static drawStickerWithShadow(
+    ctx: CanvasRenderingContext2D,
+    shape: Shape,
+    shadowColor: string,
+    showShadow: boolean
+  ) {
+    if (!shape) return;
+
+    const { x, y, width, height } = shape;
+    const fillColor = shape.fill || "#ccf9ffff";
+
+    ctx.save();
+
+    if (showShadow) {
+      ctx.shadowColor = shadowColor;
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 10;
+    } else {
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
+    const gradient = ctx.createLinearGradient(x, y, x, y + height);
+
+    gradient.addColorStop(0, fillColor);
+    gradient.addColorStop(1, adjustHexBrightness(fillColor, 15, "lighten"));
+
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.save();
+
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     ctx.restore();
   }
 }
