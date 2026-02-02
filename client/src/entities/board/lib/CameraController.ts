@@ -39,6 +39,10 @@ export class CameraController {
     };
   }
 
+  applyTransform(ctx: CanvasRenderingContext2D) {
+    ctx.setTransform(this.zoom, 0, 0, this.zoom, this.offsetX, this.offsetY);
+  }
+
   public get state(): CameraState {
     return {
       zoom: this.zoom,

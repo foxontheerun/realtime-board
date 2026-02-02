@@ -4,18 +4,16 @@ import { CanvasPainter } from "../lib/CanvasPainter";
 import type { _Shape } from "../model/EntityManager";
 
 export class StaticLayer {
-  draw(ctx: CanvasRenderingContext2D, camera: CameraState, shapes: _Shape[]) {
-    ctx.save();
-
+  draw(ctx: CanvasRenderingContext2D, shapes: _Shape[]) {
     shapes.forEach((s) => {
       if (s.state != "static") return;
       switch (s.type) {
         case "ELLIPSE":
-          CanvasPainter.drawEllipseShape(ctx, s as unknown as Shape, camera);
+          CanvasPainter.drawEllipseShape(ctx, s as unknown as Shape);
           break;
         case "RECT":
         default:
-          CanvasPainter.drawRectShape(ctx, s as unknown as Shape, camera);
+          CanvasPainter.drawRectShape(ctx, s as unknown as Shape);
       }
     });
 

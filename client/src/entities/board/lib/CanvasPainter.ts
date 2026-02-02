@@ -2,18 +2,14 @@ import type { Shape } from "../../block";
 import type { CameraState } from "../layers/GridLayer";
 
 export class CanvasPainter {
-  public static drawRectShape(
-    ctx: CanvasRenderingContext2D,
-    rect: Shape,
-    camera: CameraState
-  ) {
+  public static drawRectShape(ctx: CanvasRenderingContext2D, rect: Shape) {
     const { fill = "blue", stroke = "", strokeWidth = 1, radius = 8 } = rect;
 
-    const x = rect.x * camera.zoom + camera.offsetX;
-    const y = rect.y * camera.zoom + camera.offsetY;
+    const x = rect.x;
+    const y = rect.y;
 
-    const width = rect.width * camera.zoom;
-    const height = rect.height * camera.zoom;
+    const width = rect.width;
+    const height = rect.height;
     const baseLineWidth = strokeWidth || 2;
 
     if (radius <= 0) {
@@ -25,7 +21,7 @@ export class CanvasPainter {
       ctx.lineWidth = baseLineWidth;
       ctx.strokeRect(x, y, width, height);
     } else {
-      const r = radius * camera.zoom;
+      const r = radius;
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + width - r, y);
@@ -51,8 +47,7 @@ export class CanvasPainter {
 
   public static drawEllipseShape(
     ctx: CanvasRenderingContext2D,
-    ellipse: Shape,
-    camera: CameraState
+    ellipse: Shape
   ) {
     const {
       fill = "blue",
@@ -61,10 +56,10 @@ export class CanvasPainter {
       rotation = 0,
     } = ellipse;
 
-    const x = ellipse.x * camera.zoom + camera.offsetX;
-    const y = ellipse.y * camera.zoom + camera.offsetY;
-    const width = ellipse.width * camera.zoom;
-    const height = ellipse.height * camera.zoom;
+    const x = ellipse.x;
+    const y = ellipse.y;
+    const width = ellipse.width;
+    const height = ellipse.height;
 
     const centerX = x + width / 2;
     const centerY = y + height / 2;
