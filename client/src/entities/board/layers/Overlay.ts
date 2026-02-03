@@ -1,18 +1,11 @@
 import type { Shape } from "../../block";
 import { CanvasPainter } from "../lib/CanvasPainter";
 import type { _Shape } from "../model/EntityManager";
-import type { CameraState } from "./GridLayer";
 
 const BORDER_COLOR = "#92c1ffff";
 const STROKE_WIDTH = 3;
 export class Overlay {
-  drawBorder(
-    ctx: CanvasRenderingContext2D,
-    camera: CameraState,
-    shape: _Shape
-  ) {
-    ctx.save();
-
+  drawBorder(ctx: CanvasRenderingContext2D, shape: _Shape) {
     const borderFigure = {
       ...shape,
       fill: null,
@@ -25,7 +18,7 @@ export class Overlay {
       height: shape.height + 1,
     };
 
-    CanvasPainter.drawRectShape(ctx, borderFigure as unknown as Shape, camera);
+    CanvasPainter.drawRectShape(ctx, borderFigure as unknown as Shape);
 
     ctx.restore();
   }

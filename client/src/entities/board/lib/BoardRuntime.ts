@@ -4,7 +4,6 @@ import { StaticLayer } from "../layers/StaticLayer";
 import { DragLayer } from "../layers/DragLayer";
 import { EntityManager, type _Shape } from "../model/EntityManager";
 import { Overlay } from "../layers/Overlay";
-import { ImagePainter } from "./ImagePainter";
 
 export class BoardRuntime {
   camera = new CameraController();
@@ -27,6 +26,8 @@ export class BoardRuntime {
 
   private draggedShape: _Shape | null = null;
   private dragStartOffset = { x: 0, y: 0 };
+
+  private rafId: number | null = null;
 
   constructor(
     gridCanvas: HTMLCanvasElement,
@@ -53,6 +54,16 @@ export class BoardRuntime {
     this.drawAll();
   }
 
+  requestDraw() {
+    if (this.rafId !== null) return;
+
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+
+      this.requestDraw();
+    });
+  }
+
   updateSize() {
     const rect = this.mainCanvas.getBoundingClientRect();
 
@@ -75,7 +86,6 @@ export class BoardRuntime {
     this.drawStatic();
     this.drawDrag();
     this.drawOverlay();
-    this.drawImageWithCamera();
   }
 
   drawGrid() {
@@ -84,27 +94,35 @@ export class BoardRuntime {
   }
 
   drawStatic() {
+    // очистка
+    this.mainCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.mainCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
 
-    this.staticLayer.draw(
-      this.mainCtx,
-      this.camera.state,
-      this.entityManager.getShapes()
-    );
-    this.drawImageWithCamera();
+    // мир
+    this.mainCtx.save();
+    this.camera.applyTransform(this.mainCtx);
+
+    this.staticLayer.draw(this.mainCtx, this.entityManager.getShapes());
+
+    this.mainCtx.restore();
   }
 
   drawDrag() {
+    this.dragCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.dragCtx.clearRect(0, 0, this.dragCanvas.width, this.dragCanvas.height);
 
-    this.dragLayer.draw(
-      this.dragCtx,
-      this.camera.state,
-      this.entityManager.getShapes()
-    );
+    // 2. мир с камерой
+    this.dragCtx.save();
+    this.camera.applyTransform(this.dragCtx);
+
+    this.dragLayer.draw(this.dragCtx, this.entityManager.getShapes());
+
+    this.dragCtx.restore();
   }
 
   drawOverlay() {
+    // 1. очистка БЕЗ камеры
+    this.overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.overlayCtx.clearRect(
       0,
       0,
@@ -113,7 +131,14 @@ export class BoardRuntime {
     );
 
     if (!this.draggedShape) return;
-    this.overlay.drawBorder(this.overlayCtx, this.camera, this.draggedShape);
+
+    // 2. мир с камерой
+    this.overlayCtx.save();
+    this.camera.applyTransform(this.overlayCtx);
+
+    this.overlay.drawBorder(this.overlayCtx, this.draggedShape);
+
+    this.overlayCtx.restore();
   }
 
   handleMouseDown(screenX: number, screenY: number) {
@@ -167,17 +192,4 @@ export class BoardRuntime {
   }
 
   dispose() {}
-
-  // test
-  async drawImageWithCamera() {
-    await ImagePainter.drawImage(
-      this.mainCtx,
-      "joker.jpg",
-      400,
-      400,
-      150,
-      150,
-      this.camera.state
-    );
-  }
 }
