@@ -21,4 +21,5 @@ export interface Shape {
   fill?: string | null;
   stroke?: string | null;
   strokeWidth?: number | null;
+  radius?: number;
 }
