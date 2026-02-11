@@ -1,51 +1,88 @@
-import type { CameraState } from "../layers/GridLayer";
+export interface CameraState {
+  zoom: number;
+  rotation: number;
+  offsetX: number;
+  offsetY: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}
 
 export class CameraController {
-  public zoom = 1;
-  public offsetX = 0;
-  public offsetY = 0;
+  private viewMatrix = new DOMMatrix();
+  private inverseViewMatrix = new DOMMatrix();
+
+  private zoom = 1;
+  private rotation = 0;
+  private offsetX = 0;
+  private offsetY = 0;
 
   public viewportWidth = 0;
   public viewportHeight = 0;
 
+  public worldWidth = 2000;
+  public worldHeight = 2000;
+
   private listeners: (() => void)[] = [];
 
-  public updateViewport(canvas: HTMLCanvasElement) {
+  getScale() {
+    return this.viewMatrix.a;
+  }
+
+  updateViewport(canvas: HTMLCanvasElement) {
     this.viewportWidth = canvas.clientWidth;
     this.viewportHeight = canvas.clientHeight;
-    this.notify();
+    this.recalculateMatrix();
   }
 
-  public setZoom(newZoom: number, center?: { x: number; y: number }) {
+  setZoom(newZoom: number, center?: { x: number; y: number }) {
     if (center) {
-      const scaleFactor = newZoom / this.zoom;
-      this.offsetX = center.x - (center.x - this.offsetX) * scaleFactor;
-      this.offsetY = center.y - (center.y - this.offsetY) * scaleFactor;
+      const before = this.screenToWorld(center.x, center.y);
+
+      this.zoom = newZoom;
+      this.recalculateMatrix();
+
+      const after = this.screenToWorld(center.x, center.y);
+
+      this.offsetX += (after.x - before.x) * this.zoom;
+      this.offsetY += (after.y - before.y) * this.zoom;
+    } else {
+      this.zoom = newZoom;
     }
-    this.zoom = newZoom;
-    this.notify();
+
+    this.recalculateMatrix();
   }
 
-  public setOffset(x: number, y: number) {
+  setRotation(rad: number) {
+    this.rotation = rad;
+    this.recalculateMatrix();
+  }
+
+  setOffset(x: number, y: number) {
     this.offsetX = x;
     this.offsetY = y;
-    this.notify();
+    this.recalculateMatrix();
   }
 
-  public screenToWorld(screenX: number, screenY: number) {
-    return {
-      x: (screenX - this.offsetX) / this.zoom,
-      y: (screenY - this.offsetY) / this.zoom,
-    };
+  screenToWorld(x: number, y: number) {
+    const point = new DOMPoint(x, y);
+    const result = point.matrixTransform(this.inverseViewMatrix);
+    return { x: result.x, y: result.y };
+  }
+
+  worldToScreen(x: number, y: number) {
+    const point = new DOMPoint(x, y);
+    const result = point.matrixTransform(this.viewMatrix);
+    return { x: result.x, y: result.y };
   }
 
   applyTransform(ctx: CanvasRenderingContext2D) {
-    ctx.setTransform(this.zoom, 0, 0, this.zoom, this.offsetX, this.offsetY);
+    ctx.setTransform(this.viewMatrix);
   }
 
-  public get state(): CameraState {
+  get state(): CameraState {
     return {
       zoom: this.zoom,
+      rotation: this.rotation,
       offsetX: this.offsetX,
       offsetY: this.offsetY,
       viewportWidth: this.viewportWidth,
@@ -53,9 +90,24 @@ export class CameraController {
     };
   }
 
-  public subscribe(fn: () => void) {
+  subscribe(fn: () => void) {
     this.listeners.push(fn);
-    return () => (this.listeners = this.listeners.filter((l) => l !== fn));
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== fn);
+    };
+  }
+
+  private recalculateMatrix() {
+    const m = new DOMMatrix();
+
+    m.translateSelf(this.offsetX, this.offsetY);
+    m.rotateSelf((this.rotation * 180) / Math.PI);
+    m.scaleSelf(this.zoom);
+
+    this.viewMatrix = m;
+    this.inverseViewMatrix = m.inverse();
+
+    this.notify();
   }
 
   private notify() {

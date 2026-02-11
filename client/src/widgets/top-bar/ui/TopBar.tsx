@@ -34,7 +34,7 @@ export function TopBar() {
     <div className="h-14 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#4A65F6] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-[#3B82F6] flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <rect x="2" y="2" width="5" height="5" rx="1" fill="white" />
               <rect x="9" y="2" width="5" height="5" rx="1" fill="white" />
@@ -79,7 +79,7 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="px-4 py-1.5 bg-[#4A65F6] text-white rounded-lg hover:bg-[#3B52CC] transition-colors flex items-center gap-2">
+        <button className="px-4 py-1.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] transition-colors flex items-center gap-2">
           <Share2 className="w-4 h-4" />
           <span>Share</span>
         </button>

@@ -30,7 +30,7 @@ export function BoardCanvasNew({ setCamera }: BoardCanvasNewProps) {
       gridCanvasRef.current,
       mainCanvasRef.current,
       dragCanvasRef.current,
-      overlayCanvasRef.current
+      overlayCanvasRef.current,
     );
 
     setCamera(runtimeRef.current.camera);
@@ -43,7 +43,6 @@ export function BoardCanvasNew({ setCamera }: BoardCanvasNewProps) {
 
     return () => {
       observer.disconnect();
-      runtimeRef.current?.dispose();
     };
   }, [setCamera]);
 
@@ -53,10 +52,10 @@ export function BoardCanvasNew({ setCamera }: BoardCanvasNewProps) {
     const mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = runtimeRef.current.camera.zoom * factor;
+    const newZoom = runtimeRef.current.camera.getScale() * factor;
     const clampedZoom = Math.min(
       MAX_ZOOM / 100,
-      Math.max(MIN_ZOOM / 100, newZoom)
+      Math.max(MIN_ZOOM / 100, newZoom),
     );
     runtimeRef.current.camera.setZoom(clampedZoom, mouse);
   };
@@ -73,15 +72,23 @@ export function BoardCanvasNew({ setCamera }: BoardCanvasNewProps) {
       />
       <canvas
         ref={dragCanvasRef}
-        onMouseDown={(e) =>
-          runtimeRef.current?.handleMouseDown(e.clientX, e.clientY)
-        }
-        onMouseMove={(e) =>
-          runtimeRef.current?.handleMouseMove(e.clientX, e.clientY)
-        }
         onMouseUp={() => runtimeRef.current?.handleMouseUp()}
         className="absolute inset-0 touch-none w-full h-full  "
         onWheel={handleWheel}
+        onMouseDown={(e) => {
+          if (e.button === 2) {
+            runtimeRef.current?.handlePanStart(e.clientX, e.clientY);
+            return;
+          }
+
+          if (e.button === 0) {
+            runtimeRef.current?.handleMouseDown(e.clientX, e.clientY);
+          }
+        }}
+        onMouseMove={(e) =>
+          runtimeRef.current?.handleMouseMove(e.clientX, e.clientY)
+        }
+        onContextMenu={(e) => e.preventDefault()}
       />
       <canvas
         ref={overlayCanvasRef}

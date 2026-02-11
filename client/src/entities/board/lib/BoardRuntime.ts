@@ -36,8 +36,6 @@ export class BoardRuntime {
 
   private interaction: InteractionMode = { type: "idle" };
 
-  private rafId: number | null = null;
-
   constructor(
     gridCanvas: HTMLCanvasElement,
     mainCanvas: HTMLCanvasElement,
@@ -133,7 +131,7 @@ export class BoardRuntime {
     const dragging = this.entityManager.getDraggedShape();
     if (!dragging) return;
 
-    this.overlay.drawBounds(this.overlayCtx, dragging, this.camera.zoom);
+    this.overlay.drawBounds(this.overlayCtx, dragging, this.camera.getScale());
 
     this.overlayCtx.restore();
   }
@@ -170,8 +168,28 @@ export class BoardRuntime {
     this.drawOverlay();
   }
 
+  handlePanStart(screenX: number, screenY: number) {
+    this.interaction = { type: "pan", startX: screenX, startY: screenY };
+    const container = this.overlayCanvas.parentElement;
+    if (container) container.classList.add("cursor-grabbing");
+  }
+
   handleMouseMove(screenX: number, screenY: number) {
     if (this.interaction.type === "idle") return;
+
+    if (this.interaction.type === "pan") {
+      const dx = screenX - this.interaction.startX;
+      const dy = screenY - this.interaction.startY;
+
+      const state = this.camera.state;
+
+      this.camera.setOffset(state.offsetX + dx, state.offsetY + dy);
+
+      this.interaction.startX = screenX;
+      this.interaction.startY = screenY;
+
+      return;
+    }
 
     const worldPoint = this.getWorldPoint(screenX, screenY);
 
@@ -192,6 +210,13 @@ export class BoardRuntime {
   handleMouseUp() {
     if (this.interaction.type === "idle") return;
 
+    if (this.interaction.type === "pan") {
+      this.interaction = { type: "idle" };
+      const container = this.overlayCanvas.parentElement;
+      if (container) container.classList.remove("cursor-grabbing");
+      return;
+    }
+
     if (this.interaction.type === "resize") {
       this.resizeController.end();
     }
@@ -210,8 +235,6 @@ export class BoardRuntime {
       this.entityManager.updateShapeList(updatedShape);
     }
   }
-
-  dispose() {}
 
   private getWorldPoint(
     screenX: number,

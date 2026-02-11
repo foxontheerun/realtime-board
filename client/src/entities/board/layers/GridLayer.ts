@@ -1,16 +1,9 @@
+import type { CameraState } from "../lib/CameraController";
 import {
   BASE_GRID_COLOR,
   buildGridLayers,
   type GridLayerConfig,
 } from "./models/buildGridLayers";
-
-export type CameraState = {
-  zoom: number;
-  offsetX: number;
-  offsetY: number;
-  viewportWidth: number;
-  viewportHeight: number;
-};
 
 export class GridLayer {
   draw(ctx: CanvasRenderingContext2D, camera: CameraState) {
@@ -30,7 +23,7 @@ export class GridLayer {
   private drawLayer(
     ctx: CanvasRenderingContext2D,
     camera: CameraState,
-    layer: GridLayerConfig
+    layer: GridLayerConfig,
   ) {
     const { size, opacity, lineWidth } = layer;
 
