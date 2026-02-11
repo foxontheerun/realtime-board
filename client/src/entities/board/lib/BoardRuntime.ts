@@ -4,9 +4,17 @@ import { StaticLayer } from "../layers/StaticLayer";
 import { DragLayer } from "../layers/DragLayer";
 import { EntityManager, type _Shape } from "../model/EntityManager";
 import { Overlay } from "../layers/Overlay";
+import { type InteractionMode } from "../model/types";
+import {
+  hitTestResizeHandle,
+  RESIZE_HANDLE_SIZE,
+} from "../model/mouseEventHandlingHelpers";
+import { ResizeCalculator } from "./ResizeCalculator";
+import { ResizeController } from "./ResizeController";
+import { DragController } from "./DragController";
 
 export class BoardRuntime {
-  camera = new CameraController();
+  public camera = new CameraController();
   private dragCtx: CanvasRenderingContext2D;
   private gridCtx: CanvasRenderingContext2D;
   private mainCtx: CanvasRenderingContext2D;
@@ -23,9 +31,10 @@ export class BoardRuntime {
   overlay = new Overlay();
 
   entityManager = new EntityManager();
+  resizeController = new ResizeController();
+  dragController = new DragController();
 
-  private draggedShape: _Shape | null = null;
-  private dragStartOffset = { x: 0, y: 0 };
+  private interaction: InteractionMode = { type: "idle" };
 
   private rafId: number | null = null;
 
@@ -33,7 +42,7 @@ export class BoardRuntime {
     gridCanvas: HTMLCanvasElement,
     mainCanvas: HTMLCanvasElement,
     drag: HTMLCanvasElement,
-    overlay: HTMLCanvasElement
+    overlay: HTMLCanvasElement,
   ) {
     this.gridCanvas = gridCanvas;
     this.mainCanvas = mainCanvas;
@@ -52,16 +61,6 @@ export class BoardRuntime {
     });
 
     this.drawAll();
-  }
-
-  requestDraw() {
-    if (this.rafId !== null) return;
-
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-
-      this.requestDraw();
-    });
   }
 
   updateSize() {
@@ -94,11 +93,9 @@ export class BoardRuntime {
   }
 
   drawStatic() {
-    // очистка
     this.mainCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.mainCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
 
-    // мир
     this.mainCtx.save();
     this.camera.applyTransform(this.mainCtx);
 
@@ -111,85 +108,116 @@ export class BoardRuntime {
     this.dragCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.dragCtx.clearRect(0, 0, this.dragCanvas.width, this.dragCanvas.height);
 
-    // 2. мир с камерой
     this.dragCtx.save();
     this.camera.applyTransform(this.dragCtx);
+    const dragging = this.entityManager.getShapesOnDragLayer();
 
-    this.dragLayer.draw(this.dragCtx, this.entityManager.getShapes());
+    if (!dragging) return;
+
+    this.dragLayer.draw(this.dragCtx, dragging);
 
     this.dragCtx.restore();
   }
 
   drawOverlay() {
-    // 1. очистка БЕЗ камеры
     this.overlayCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.overlayCtx.clearRect(
       0,
       0,
       this.overlayCanvas.width,
-      this.overlayCanvas.height
+      this.overlayCanvas.height,
     );
 
-    if (!this.draggedShape) return;
-
-    // 2. мир с камерой
     this.overlayCtx.save();
     this.camera.applyTransform(this.overlayCtx);
+    const dragging = this.entityManager.getDraggedShape();
+    if (!dragging) return;
 
-    this.overlay.drawBorder(this.overlayCtx, this.draggedShape);
+    this.overlay.drawBounds(this.overlayCtx, dragging, this.camera.zoom);
 
     this.overlayCtx.restore();
   }
 
   handleMouseDown(screenX: number, screenY: number) {
-    const rect = this.mainCanvas.getBoundingClientRect();
-    const localX = screenX - rect.left;
-    const localY = screenY - rect.top;
+    const worldPoint = this.getWorldPoint(screenX, screenY);
+    const shape = this.entityManager.findShapeAt(
+      worldPoint,
+      RESIZE_HANDLE_SIZE,
+    );
 
-    const worldPoint = this.camera.screenToWorld(localX, localY);
-
-    const shape = this.entityManager.findShapeAt(worldPoint);
-
-    if (shape) {
-      this.draggedShape = shape;
-
-      shape.state = "dragging";
-
-      this.dragStartOffset = {
-        x: worldPoint.x - shape.x,
-        y: worldPoint.y - shape.y,
-      };
-
+    if (!shape) {
+      this.entityManager.getShapes().forEach((s) => (s.state = "static"));
+      this.interaction = { type: "idle" };
       this.drawStatic();
       this.drawDrag();
       this.drawOverlay();
+      return;
     }
+
+    const bound = ResizeCalculator.getShapeManipulationBounds(shape);
+    const handle = hitTestResizeHandle(bound, worldPoint);
+    if (handle) {
+      this.resizeController.begin(shape, handle, worldPoint);
+      this.interaction = { type: "resize" };
+      this.drawOverlay();
+      return;
+    }
+
+    this.dragController.begin(shape, worldPoint);
+    this.interaction = { type: "drag", shape };
+    this.drawStatic();
+    this.drawDrag();
+    this.drawOverlay();
   }
 
   handleMouseMove(screenX: number, screenY: number) {
-    if (!this.draggedShape) return;
+    if (this.interaction.type === "idle") return;
 
-    const rect = this.mainCanvas.getBoundingClientRect();
-    const worldPoint = this.camera.screenToWorld(
-      screenX - rect.left,
-      screenY - rect.top
-    );
+    const worldPoint = this.getWorldPoint(screenX, screenY);
 
-    this.draggedShape.x = worldPoint.x - this.dragStartOffset.x;
-    this.draggedShape.y = worldPoint.y - this.dragStartOffset.y;
+    if (this.interaction.type === "drag") {
+      this.applyDrag(worldPoint);
+    } else if (this.interaction.type === "resize") {
+      const newShape = this.resizeController.update(worldPoint);
+
+      if (newShape) {
+        this.entityManager.updateShapeList(newShape);
+      }
+    }
 
     this.drawDrag();
     this.drawOverlay();
   }
 
   handleMouseUp() {
-    if (this.draggedShape) {
-      this.draggedShape.state = "static";
-      this.draggedShape = null;
-      this.drawAll();
-      this.drawOverlay();
+    if (this.interaction.type === "idle") return;
+
+    if (this.interaction.type === "resize") {
+      this.resizeController.end();
+    }
+
+    this.interaction = { type: "idle" };
+
+    this.drawOverlay();
+    this.drawDrag();
+    this.drawStatic();
+  }
+
+  applyDrag(worldPoint: { x: number; y: number }) {
+    const updatedShape = this.dragController.update(worldPoint);
+
+    if (updatedShape) {
+      this.entityManager.updateShapeList(updatedShape);
     }
   }
 
   dispose() {}
+
+  private getWorldPoint(
+    screenX: number,
+    screenY: number,
+  ): { x: number; y: number } {
+    const rect = this.mainCanvas.getBoundingClientRect();
+    return this.camera.screenToWorld(screenX - rect.left, screenY - rect.top);
+  }
 }
