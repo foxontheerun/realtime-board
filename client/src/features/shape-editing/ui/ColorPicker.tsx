@@ -3,7 +3,7 @@ import {
   STICKY_COLORS,
   STICKY_PRESETS,
   type StickyColorId,
-} from "../../../entities/block";
+} from "../../../entities/Shape";
 import { useEffect, useRef } from "react";
 
 interface ColorPickerProps {

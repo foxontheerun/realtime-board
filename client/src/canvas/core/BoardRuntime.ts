@@ -1,17 +1,15 @@
-import { CameraController } from "./CameraController";
-import { GridLayer } from "../layers/GridLayer";
-import { StaticLayer } from "../layers/StaticLayer";
-import { DragLayer } from "../layers/DragLayer";
-import { EntityManager, type _Shape } from "../model/EntityManager";
-import { Overlay } from "../layers/Overlay";
-import { type InteractionMode } from "../model/types";
+import { CameraController } from "../camera";
+import { EntityManager, type InteractionMode } from "../entities";
 import {
-  hitTestResizeHandle,
+  ResizeController,
+  DragController,
+  ResizeCalculator,
+} from "../interaction";
+import { GridLayer, StaticLayer, DragLayer, Overlay } from "../rendering";
+import {
   RESIZE_HANDLE_SIZE,
-} from "../model/mouseEventHandlingHelpers";
-import { ResizeCalculator } from "./ResizeCalculator";
-import { ResizeController } from "./ResizeController";
-import { DragController } from "./DragController";
+  hitTestResizeHandle,
+} from "../rendering/layers/mouseEventHandlingHelpers";
 
 export class BoardRuntime {
   public camera = new CameraController();

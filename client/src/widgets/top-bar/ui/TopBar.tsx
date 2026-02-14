@@ -1,7 +1,7 @@
 import { Undo2, Redo2, Share2, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useCamera } from "../../../entities/board/model/CameraContext";
-import { MAX_ZOOM, MIN_ZOOM } from "../../../entities/board/ui/BoardCanvasNew";
+import { useCamera } from "../../../entities/Board/CameraContext";
+import { MAX_ZOOM, MIN_ZOOM } from "../../../entities/Board/BoardCanvasNew";
 
 export function TopBar() {
   const camera = useCamera();

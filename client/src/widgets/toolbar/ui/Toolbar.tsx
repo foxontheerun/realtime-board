@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MousePointer2, Square, Type, Hand, Trash2 } from "lucide-react";
 import type { Tool } from "../../../entities/block/model/types";
-import { type StickyColorId } from "../../../entities/block";
+import { type StickyColorId } from "../../../entities/Shape";
 import { ColorPicker } from "../../../features/color-picker/ui/ColorPicker";
 
 interface ToolbarProps {

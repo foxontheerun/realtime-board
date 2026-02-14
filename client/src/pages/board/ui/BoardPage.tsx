@@ -1,12 +1,10 @@
 import { useParams } from "react-router-dom";
 
 import { useState } from "react";
-import type { Tool } from "../../../entities/block";
+import type { StickyColorId, Tool } from "../../../entities/Shape";
 import { TopBar, Toolbar } from "../../../widgets";
-import type { StickyColorId } from "../../../entities/block/model/stickyPresets";
-import { CameraContext } from "../../../entities/board/model/CameraContext";
-import type { CameraController } from "../../../entities/board/lib/CameraController";
-import { BoardCanvasNew } from "../../../entities/board/ui/BoardCanvasNew";
+import type { CameraController } from "../../../canvas";
+import { CameraContext } from "../../../entities/Board/CameraContext";
 
 export function BoardPage() {
   const { id } = useParams<{ id: string }>();
