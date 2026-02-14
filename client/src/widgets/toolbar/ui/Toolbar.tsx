@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MousePointer2, Square, Type, Hand, Trash2 } from "lucide-react";
 import type { Tool } from "../../../entities/block/model/types";
-import { type StickyColorId } from "../../../entities/block";
+import { type StickyColorId } from "../../../entities/Shape";
 import { ColorPicker } from "../../../features/color-picker/ui/ColorPicker";
 
 interface ToolbarProps {
@@ -58,7 +58,7 @@ export function Toolbar({
             onClick={() => handleToolClick(tool.id)}
             className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all ${
               activeTool === tool.id
-                ? "bg-[#4A65F6] text-white shadow-md"
+                ? "bg-[#3B82F6] text-white shadow-md"
                 : "bg-transparent text-[#666666] hover:bg-[#F5F5F5]"
             }`}
             title={tool.label}
