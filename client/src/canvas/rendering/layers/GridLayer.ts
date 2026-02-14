@@ -1,9 +1,9 @@
-import type { CameraState } from "../lib/CameraController";
+import type { CameraState } from "../../camera/CameraController";
 import {
   BASE_GRID_COLOR,
   buildGridLayers,
   type GridLayerConfig,
-} from "./models/buildGridLayers";
+} from "../../utils/buildGridLayers";
 
 export class GridLayer {
   draw(ctx: CanvasRenderingContext2D, camera: CameraState) {

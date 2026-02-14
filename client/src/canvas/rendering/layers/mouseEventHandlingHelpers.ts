@@ -1,5 +1,8 @@
-import type { _Shape, ManipulationBounds } from "./shape.model";
-import { ResizeHandles, type ResizeHandle } from "./types";
+import {
+  ResizeHandles,
+  type ManipulationBounds,
+  type ResizeHandle,
+} from "../../entities";
 
 export const RESIZE_HANDLE_SIZE = 6;
 

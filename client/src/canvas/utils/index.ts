@@ -1,3 +1,2 @@
-export { CanvasPainter } from './CanvasPainter';
-export { colorUtils } from './colorUtils';
-export * from './mouseEventHandlingHelpers';
+export { CanvasPainter } from "./CanvasPainter";
+export { adjustHexBrightness } from "./colorUtils";

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { Shape } from "../model/types";
-import { EditableText } from "../../../shared/ui/editable-text/EditableText";
+import type { Shape } from "./types";
+import { EditableText } from "../../shared/ui/editable-text/EditableText";
 
 interface TextBlockProps {
   shape: Shape;
@@ -79,5 +79,5 @@ export const TextBlock = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );

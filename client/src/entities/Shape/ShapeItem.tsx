@@ -1,11 +1,9 @@
 import { memo, useCallback, useState } from "react";
-import {
-  ResizableDraggableShape,
-  ShapeBlock,
-  TextBlock,
-  EllipseBlock,
-} from "../../block";
-import type { Shape } from "../../block/model/types";
+import { EllipseBlock } from "./EllipseBlock";
+import { ResizableDraggableShape } from "./ResizableDraggableShape";
+import { ShapeBlock } from "./ShapeBlock";
+import { TextBlock } from "./TextBlock";
+import type { Shape } from "./types";
 
 interface ShapeItemProps {
   shape: Shape;
@@ -39,14 +37,14 @@ function ShapeItemComponent({
     (e: React.MouseEvent<HTMLDivElement>) => {
       onShapeContextMenu(shape.id, e);
     },
-    [onShapeContextMenu, shape.id]
+    [onShapeContextMenu, shape.id],
   );
 
   const handleChangeText = useCallback(
     (text: string) => {
       onTextChange(shape, text);
     },
-    [onTextChange, shape]
+    [onTextChange, shape],
   );
 
   const handlenSetEditing = (isEdit: boolean) => {

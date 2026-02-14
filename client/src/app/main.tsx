@@ -3,8 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 import { ApolloProvider } from "@apollo/client/react";
-import { apolloClient } from "./app/apolloClient";
-import { BoardPage } from "./pages/board/ui/BoardPage";
+import { apolloClient } from "./apolloClient";
+import { BoardPage } from "../pages/board/ui/BoardPage";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
@@ -17,5 +17,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         </Routes>
       </BrowserRouter>
     </ApolloProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

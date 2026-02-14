@@ -1,8 +1,8 @@
-import type { Shape } from "../../block";
-import { CanvasPainter } from "../lib/CanvasPainter";
-import { ResizeCalculator } from "../lib/ResizeCalculator";
-import type { _Shape } from "../model/EntityManager";
-import { RESIZE_HANDLE_SIZE } from "../model/mouseEventHandlingHelpers";
+import type { Shape } from "../../../entities/Shape";
+import type { _Shape } from "../../entities";
+import { ResizeCalculator } from "../../interaction";
+import { CanvasPainter } from "../../utils";
+import { RESIZE_HANDLE_SIZE } from "./mouseEventHandlingHelpers";
 
 const BOUNDS_PADDING = 30;
 

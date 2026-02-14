@@ -1,6 +1,6 @@
-import type { Shape } from "../../block";
-import { CanvasPainter } from "../lib/CanvasPainter";
-import type { _Shape } from "../model/EntityManager";
+import type { Shape } from "../../../entities/Shape";
+import type { _Shape } from "../../entities";
+import { CanvasPainter } from "../../utils";
 
 export class DragLayer {
   draw(ctx: CanvasRenderingContext2D, shapes: _Shape[]) {

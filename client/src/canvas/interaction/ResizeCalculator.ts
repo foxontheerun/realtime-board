@@ -1,6 +1,9 @@
-import type { _Shape } from "../model/EntityManager";
-import type { ManipulationBounds } from "../model/shape.model";
-import { ResizeHandles, type ResizeHandle } from "../model/types";
+import {
+  ResizeHandles,
+  type _Shape,
+  type ManipulationBounds,
+  type ResizeHandle,
+} from "../entities";
 
 export class ResizeCalculator {
   static getShapeManipulationBounds(

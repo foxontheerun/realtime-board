@@ -5,6 +5,7 @@ import type { StickyColorId, Tool } from "../../../entities/Shape";
 import { TopBar, Toolbar } from "../../../widgets";
 import type { CameraController } from "../../../canvas";
 import { CameraContext } from "../../../entities/Board/CameraContext";
+import { BoardCanvasNew } from "../../../entities/Board/BoardCanvasNew";
 
 export function BoardPage() {
   const { id } = useParams<{ id: string }>();

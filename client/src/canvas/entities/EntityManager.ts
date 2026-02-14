@@ -1,5 +1,5 @@
-import type { ShapeType } from "../../block";
-import { ResizeCalculator } from "../lib/ResizeCalculator";
+import type { ShapeType } from "../../entities/Shape";
+import { ResizeCalculator } from "../interaction";
 
 const SHAPES: _Shape[] = [
   {
