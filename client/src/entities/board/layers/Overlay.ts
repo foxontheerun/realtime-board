@@ -55,8 +55,8 @@ export class Overlay {
       y,
       width,
       height,
-      fill: "rgba(0, 120, 215, 0.2)", // полупрозрачная заливка
-      stroke: "rgba(0, 120, 215, 0.8)", // контур
+      fill: "rgba(0, 120, 215, 0.2)",
+      stroke: "rgba(0, 120, 215, 0.8)",
       strokeWidth: 1,
       radius: 0,
     };

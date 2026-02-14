@@ -139,16 +139,16 @@ export class BoardRuntime {
 
     this.overlayCtx.restore();
 
-    if (this.interaction.type === "select") {
-      const { startX, startY, currentX, currentY } = this.interaction;
-      this.overlay.drawSelectionRect(
-        this.overlayCtx,
-        startX,
-        startY,
-        currentX,
-        currentY,
-      );
-    }
+    // if (this.interaction.type === "select") {
+    //   const { startX, startY, currentX, currentY } = this.interaction;
+    //   this.overlay.drawSelectionRect(
+    //     this.overlayCtx,
+    //     startX,
+    //     startY,
+    //     currentX,
+    //     currentY,
+    //   );
+    // }
   }
 
   private getCanvasCoordinates(screenX: number, screenY: number) {
