@@ -1,4 +1,4 @@
-import type { _Shape } from "../model/shape.model";
+import type { _Shape } from "../entities";
 
 export class DragController {
   private shape: _Shape | null = null;
@@ -24,8 +24,10 @@ export class DragController {
   }
 
   end() {
+    const finalShape = this.shape;
     if (this.shape) this.shape.state = "static";
     this.shape = null;
+    return finalShape;
   }
 
   isDragging() {
