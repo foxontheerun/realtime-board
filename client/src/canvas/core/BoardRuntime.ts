@@ -29,6 +29,15 @@ export class BoardRuntime {
 
   private unsubscribeCamera?: () => void;
   private activeStickyColor: StickyColorId = "yellow";
+  private creationTool: {
+    type: ShapeType | null;
+    startPoint: { x: number; y: number } | null;
+    previewShape: _Shape | null;
+  } = {
+    type: null,
+    startPoint: null,
+    previewShape: null,
+  };
 
   constructor(
     gridCanvas: HTMLCanvasElement,
@@ -168,6 +177,9 @@ export class BoardRuntime {
     );
 
     this.interactionManager.handleMouseMove(worldPoint, canvasPoint);
+    const interaction = this.interactionManager.getInteraction();
+
+    if (interaction.type === "pan" || interaction.type === "idle") return;
     this.redrawInteractionLayers();
   }
 
@@ -230,13 +242,13 @@ export class BoardRuntime {
   }
 
   private redrawAll() {
-    const selectedId = this.interactionManager.getSelectedId();
-    this.renderManager.drawAll(this.camera, this.entityManager, selectedId);
+    const selectedIds = this.interactionManager.getSelectedIds();
+    this.renderManager.drawAll(this.camera, this.entityManager, selectedIds);
   }
 
   private redrawInteractionLayers() {
     const interaction = this.interactionManager.getInteraction();
-    const selectedId = this.interactionManager.getSelectedId();
+    const selectedIds = this.interactionManager.getSelectedIds();
 
     if (interaction.type === "pan") return;
 
@@ -255,20 +267,10 @@ export class BoardRuntime {
     this.renderManager.drawOverlay(
       this.camera,
       this.entityManager,
-      selectedId,
+      selectedIds,
       selectionBox,
     );
   }
-
-  private creationTool: {
-    type: ShapeType | null;
-    startPoint: { x: number; y: number } | null;
-    previewShape: _Shape | null;
-  } = {
-    type: null,
-    startPoint: null,
-    previewShape: null,
-  };
 
   private startCreatingShape(worldPoint: { x: number; y: number }) {
     this.creationTool.startPoint = worldPoint;
