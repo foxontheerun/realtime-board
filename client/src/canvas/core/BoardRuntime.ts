@@ -194,6 +194,7 @@ export class BoardRuntime {
       worldPoint,
       RESIZE_HANDLE_SIZE,
     );
+    console.log("shape", shape, worldPoint);
 
     if (!shape) {
       const pos = this.getCanvasCoordinates(screenX, screenY);
@@ -205,6 +206,7 @@ export class BoardRuntime {
         currentX: pos.x,
         currentY: pos.y,
       };
+
       this.entityManager.getShapes().forEach((s) => (s.state = "static"));
 
       this.drawOverlay();
@@ -213,11 +215,16 @@ export class BoardRuntime {
       return;
     }
 
+    this.selectShape(shape);
+
     const bound = ResizeCalculator.getShapeManipulationBounds(shape);
     const handle = hitTestResizeHandle(bound, worldPoint);
+
     if (handle) {
       this.resizeController.begin(shape, handle, worldPoint);
       this.interaction = { type: "resize" };
+      this.drawStatic();
+      this.drawDrag();
       this.drawOverlay();
       return;
     }
@@ -325,5 +332,10 @@ export class BoardRuntime {
   ): { x: number; y: number } {
     const rect = this.mainCanvas.getBoundingClientRect();
     return this.camera.screenToWorld(screenX - rect.left, screenY - rect.top);
+  }
+
+  private selectShape(shape: _Shape) {
+    this.entityManager.clearDragging();
+    shape.state = "dragging";
   }
 }
