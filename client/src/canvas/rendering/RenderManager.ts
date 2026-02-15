@@ -61,12 +61,12 @@ export class RenderManager {
   drawAll(
     camera: CameraController,
     entityManager: EntityManager,
-    selectedId: string | null,
+    selectedIds: string[],
   ) {
     this.drawGrid(camera);
     this.drawStatic(camera, entityManager);
     this.drawDrag(camera, entityManager);
-    this.drawOverlay(camera, entityManager, selectedId);
+    this.drawOverlay(camera, entityManager, selectedIds);
   }
 
   drawGrid(camera: CameraController) {
@@ -100,7 +100,7 @@ export class RenderManager {
   drawOverlay(
     camera: CameraController,
     entityManager: EntityManager,
-    selectedId: string | null,
+    selectedIds: string[],
     selectionBox?: {
       startX: number;
       startY: number;
@@ -119,12 +119,11 @@ export class RenderManager {
     this.overlayCtx.save();
     camera.applyTransform(this.overlayCtx);
 
-    if (selectedId) {
+    selectedIds.forEach((selectedId) => {
       const selected = entityManager.getById(selectedId);
-      if (selected) {
-        this.overlay.drawBounds(this.overlayCtx, selected, camera.getScale());
-      }
-    }
+      if (!selected) return;
+      this.overlay.drawBounds(this.overlayCtx, selected, camera.getScale());
+    });
 
     this.overlayCtx.restore();
 

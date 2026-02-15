@@ -147,13 +147,13 @@ export class BoardRuntime {
   }
 
   private redrawAll() {
-    const selectedId = this.interactionManager.getSelectedId();
-    this.renderManager.drawAll(this.camera, this.entityManager, selectedId);
+    const selectedIds = this.interactionManager.getSelectedIds();
+    this.renderManager.drawAll(this.camera, this.entityManager, selectedIds);
   }
 
   private redrawInteractionLayers() {
     const interaction = this.interactionManager.getInteraction();
-    const selectedId = this.interactionManager.getSelectedId();
+    const selectedIds = this.interactionManager.getSelectedIds();
 
     const selectionBox =
       interaction.type === "select"
@@ -172,7 +172,7 @@ export class BoardRuntime {
         this.renderManager.drawOverlay(
           this.camera,
           this.entityManager,
-          selectedId,
+          selectedIds,
           selectionBox,
         );
         break;
@@ -183,7 +183,7 @@ export class BoardRuntime {
         this.renderManager.drawOverlay(
           this.camera,
           this.entityManager,
-          selectedId,
+          selectedIds,
           selectionBox,
         );
         break;
@@ -195,7 +195,7 @@ export class BoardRuntime {
         this.renderManager.drawOverlay(
           this.camera,
           this.entityManager,
-          selectedId,
+          selectedIds,
           selectionBox,
         );
         break;

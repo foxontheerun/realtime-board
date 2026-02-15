@@ -1,16 +1,16 @@
 export type InteractionMode =
-  | { type: "idle"; selectedId: string | null }
-  | { type: "drag"; selectedId: string; activeId: string }
-  | { type: "resize"; selectedId: string; activeId: string }
+  | { type: "idle"; selectedIds: string[] }
+  | { type: "drag"; selectedIds: string[]; activeId: string }
+  | { type: "resize"; selectedIds: string[]; activeId: string }
   | {
       type: "select";
-      selectedId: string | null;
+      selectedIds: string[];
       startX: number;
       startY: number;
       currentX: number;
       currentY: number;
     }
-  | { type: "pan"; selectedId: string | null; startX: number; startY: number };
+  | { type: "pan"; selectedIds: string[]; startX: number; startY: number };
 
 export interface Point {
   x: number;
