@@ -1,4 +1,4 @@
-import type { Shape } from "../../block/model/types";
+import type { Shape } from "../../../entities/Shape";
 import type {
   ShapeEventsSubscriptionResponse,
   ShapeMovedSubscriptionResponse,
@@ -6,7 +6,7 @@ import type {
 
 export function applyMovedShape(
   current: Shape[],
-  movedData?: ShapeMovedSubscriptionResponse
+  movedData?: ShapeMovedSubscriptionResponse,
 ): Shape[] {
   const moved = movedData?.shapeMoved;
   if (!moved) return current;
@@ -20,13 +20,13 @@ export function applyMovedShape(
           width: moved.width ?? s.width,
           height: moved.height ?? s.height,
         }
-      : s
+      : s,
   );
 }
 
 export function applyShapeEvent(
   current: Shape[],
-  eventsData?: ShapeEventsSubscriptionResponse
+  eventsData?: ShapeEventsSubscriptionResponse,
 ): Shape[] {
   const event = eventsData?.shapeEvents;
   if (!event) return current;
@@ -58,7 +58,7 @@ export function applyShapeEvent(
 
 export function toggleLockLocal(
   current: Shape[],
-  id: string
+  id: string,
 ): {
   nextShapes: Shape[];
   nextLocked: boolean | null;
@@ -71,7 +71,7 @@ export function toggleLockLocal(
   return {
     nextLocked,
     nextShapes: current.map((s) =>
-      s.id === id ? { ...s, locked: nextLocked } : s
+      s.id === id ? { ...s, locked: nextLocked } : s,
     ),
   };
 }
@@ -79,7 +79,7 @@ export function toggleLockLocal(
 export function swapZIndexLocal(
   current: Shape[],
   id: string,
-  mode: "front" | "back"
+  mode: "front" | "back",
 ): {
   nextShapes: Shape[];
   currentShapeId?: string;

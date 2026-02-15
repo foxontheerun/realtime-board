@@ -1,4 +1,4 @@
-import type { ShapeType } from "../../block";
+import type { ShapeType } from "../../../entities/Shape";
 
 export class ShapeModel {
   private shape;

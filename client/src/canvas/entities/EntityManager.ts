@@ -158,7 +158,7 @@ export class EntityManager {
     );
   }
 
-  clearDragging() {
+  clearSelection() {
     this.shapes.forEach((s) => (s.state = "static"));
   }
 
@@ -208,20 +208,39 @@ export class EntityManager {
     Object.assign(existing, nextShape);
   }
 
+  getById(id: string) {
+    return this.shapes.find((s) => s.id === id) ?? null;
+  }
+
+  updateById(id: string, patch: Partial<_Shape>) {
+    const s = this.getById(id);
+    if (!s) return;
+    Object.assign(s, patch);
+  }
+
   findShapeAt(worldPoint: { x: number; y: number }, margin = 0): _Shape | null {
     const shapes = this.getShapes();
+
     for (let i = shapes.length - 1; i >= 0; i--) {
-      const s = ResizeCalculator.getShapeManipulationBounds(shapes[i]);
+      const bounds = ResizeCalculator.getShapeManipulationBounds(shapes[i]);
+
+      const normalizedBounds = {
+        x: bounds.w < 0 ? bounds.x + bounds.w : bounds.x,
+        y: bounds.h < 0 ? bounds.y + bounds.h : bounds.y,
+        w: Math.abs(bounds.w),
+        h: Math.abs(bounds.h),
+      };
 
       if (
-        worldPoint.x >= s.x - margin &&
-        worldPoint.x <= s.x + s.w + margin &&
-        worldPoint.y >= s.y - margin &&
-        worldPoint.y <= s.y + s.h + margin
+        worldPoint.x >= normalizedBounds.x - margin &&
+        worldPoint.x <= normalizedBounds.x + normalizedBounds.w + margin &&
+        worldPoint.y >= normalizedBounds.y - margin &&
+        worldPoint.y <= normalizedBounds.y + normalizedBounds.h + margin
       ) {
         return shapes[i];
       }
     }
+
     return null;
   }
 }
