@@ -102,7 +102,7 @@ export class RenderManager {
   drawOverlay(
     camera: CameraController,
     entityManager: EntityManager,
-    selectedIds: string[],
+    selectedIds: string[] | null,
     selectionBox?: {
       startX: number;
       startY: number;
