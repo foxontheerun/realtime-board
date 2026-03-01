@@ -13,10 +13,20 @@ extend type Mutation {
   # persisted update
   updateShape(boardId: ID!, shape: ShapeInput!, clientID: ID!): Shape!
 
-  # realtime transient move
+  # realtime transient move (legacy)
   moveShapeTransient(
     boardId: ID!
     shape: TransientShapeInput!
+    clientID: ID!
+  ): Boolean! @deprecated(reason: "Use moveShapesTransient for batched transient updates")
+
+  # realtime transient move (batched)
+  moveShapesTransient(
+    boardId: ID!
+    dragSessionID: ID!
+    seq: Int!
+    sentAt: String!
+    shapes: [TransientShapePatchInput!]!
     clientID: ID!
   ): Boolean!
 
@@ -24,8 +34,12 @@ extend type Mutation {
 }
 
 extend type Subscription {
-  # realtime move
+  # realtime move (legacy)
   shapeMoved(boardId: ID!): TransientShape!
+    @deprecated(reason: "Use shapesMoved for batched transient updates")
+
+  # realtime move (batched)
+  shapesMoved(boardId: ID!): TransientBatchEvent!
 
   # persisted update
   shapeUpdated(boardId: ID!): Shape!
