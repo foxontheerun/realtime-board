@@ -1,6 +1,6 @@
 # Realtime Board
 
-A small online board for real-time collaboration.  
+An online board for real-time collaboration.  
 Frontend on React + Vite, backend on Go + GraphQL (gqlgen) with subscriptions.
 
 > ⚠️ Project under active development. API and structure may change.
