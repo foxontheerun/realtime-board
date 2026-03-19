@@ -79,18 +79,39 @@ export class CanvasPainter {
     ctx: CanvasRenderingContext2D,
     ellipse: Shape,
   ) {
-    const { x, y, width, height, rotation = 0 } = ellipse;
+    const {
+      x,
+      y,
+      width,
+      height,
+      rotation = 0,
+      fill,
+      stroke,
+      strokeWidth,
+    } = ellipse;
     const centerX = x + width / 2;
     const centerY = y + height / 2;
-    const radiusX = width / 2;
-    const radiusY = height / 2;
+    const radiusX = Math.abs(width / 2);
+    const radiusY = Math.abs(height / 2);
 
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
-    this.drawShapeWithFillAndStroke(ctx, ellipse, () =>
-      ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2),
-    );
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = strokeWidth ?? 2;
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 

@@ -70,14 +70,7 @@ export class RenderManager {
     this.invalidateDirtyRects();
   }
 
-  /**
-   * Сбрасывает все prev-rect'ы — следующий draw сделает полный clearRect.
-   * Вызывать при любом изменении камеры (zoom/pan), иначе старые rect'ы
-   * в старых screen-координатах приведут к артефактам.
-   */
   invalidateDirtyRects() {
-    console.trace("invalidateDirtyRects");
-
     this.prevDragRect = null;
     this.prevOverlayRect = null;
     this.prevMovingShapeRects.clear();
@@ -234,7 +227,6 @@ export class RenderManager {
 
   private drawPreviewShape(ctx: CanvasRenderingContext2D, shape: _Shape) {
     ctx.save();
-
     ctx.fillStyle = shape.fill + "80";
     ctx.strokeStyle = shape.stroke;
     ctx.lineWidth = 2;
@@ -254,6 +246,23 @@ export class RenderManager {
         ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
         ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
       }
+    }
+
+    if (shape.type === "ELLIPSE") {
+      const cx = shape.x + shape.width / 2;
+      const cy = shape.y + shape.height / 2;
+      ctx.beginPath();
+      ctx.ellipse(
+        cx,
+        cy,
+        Math.abs(shape.width / 2),
+        Math.abs(shape.height / 2),
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+      ctx.stroke();
     }
 
     ctx.restore();

@@ -29,6 +29,12 @@ export class BoardRuntime {
 
   private unsubscribeCamera?: () => void;
   private activeStickyColor: StickyColorId = "yellow";
+
+  private activeShapeColor: { fill: string; stroke: string } = {
+    fill: "#DBEAFE",
+    stroke: "#93C5FD",
+  };
+
   private creationTool: {
     type: ShapeType | null;
     startPoint: { x: number; y: number } | null;
@@ -39,6 +45,8 @@ export class BoardRuntime {
     previewShape: null,
   };
 
+  // Флаг: идёт ли сейчас drag или resize.
+  // Пока true — статик слой не трогаем.
   private isInteracting = false;
 
   constructor(
@@ -77,6 +85,8 @@ export class BoardRuntime {
     }
 
     this.unsubscribeCamera = this.camera.subscribe(() => {
+      // Камера изменилась (zoom/pan) — prev-rect'ы в старых screen-координатах,
+      // сбрасываем их чтобы следующий draw сделал полный clearRect.
       this.renderManager.invalidateDirtyRects();
       this.redrawAll();
     });
@@ -93,6 +103,10 @@ export class BoardRuntime {
 
   setActiveStickyColor(colorId: StickyColorId) {
     this.activeStickyColor = colorId;
+  }
+
+  setActiveShapeColor(fill: string, stroke: string) {
+    this.activeShapeColor = { fill, stroke };
   }
 
   private syncCallbacks: {
@@ -121,7 +135,6 @@ export class BoardRuntime {
     const { becameRemote } = this.entityManager.applyTransientPatch(patch);
 
     if (becameRemote) {
-      // First patch — redraw static layer to remove the shape from mainCanvas.
       this.renderManager.drawStatic(this.camera, this.entityManager);
     }
 
@@ -165,6 +178,8 @@ export class BoardRuntime {
     const interaction = this.interactionManager.getInteraction();
 
     if (interaction.type === "drag" || interaction.type === "resize") {
+      // Начало взаимодействия: один раз перерисовываем статик слой,
+      // чтобы стереть с него фигуры, которые уйдут на drag слой.
       this.isInteracting = true;
       this.renderManager.drawStatic(this.camera, this.entityManager);
       this.renderManager.drawDrag(this.camera, this.entityManager);
@@ -174,6 +189,7 @@ export class BoardRuntime {
         this.interactionManager.getSelectedIds(),
       );
     } else {
+      // select или idle — просто обновляем overlay (handles выделения)
       this.renderManager.drawOverlay(
         this.camera,
         this.entityManager,
@@ -216,6 +232,7 @@ export class BoardRuntime {
     if (interaction.type === "pan" || interaction.type === "idle") return;
 
     if (interaction.type === "drag" || interaction.type === "resize") {
+      // Во время взаимодействия — только drag и overlay, статик не трогаем.
       this.renderManager.drawDrag(this.camera, this.entityManager);
       this.renderManager.drawOverlay(
         this.camera,
@@ -225,6 +242,7 @@ export class BoardRuntime {
       return;
     }
 
+    // select — обновляем overlay с selection rect
     const selectionBox =
       interaction.type === "select"
         ? {
@@ -309,6 +327,7 @@ export class BoardRuntime {
     if (!this.creationTool.previewShape) return;
 
     const shape = this.creationTool.previewShape;
+    console.log("finishCreatingShape", shape);
 
     if (shape.width < 10 || shape.height < 10) {
       shape.width = Math.max(shape.width, 100);
@@ -326,9 +345,15 @@ export class BoardRuntime {
   }
 
   private startCreatingShape(worldPoint: { x: number; y: number }) {
+    console.log("startCreatingShape", this.creationTool.type);
+
     this.creationTool.startPoint = worldPoint;
 
-    const colorPreset = STICKY_PRESETS[this.activeStickyColor];
+    const isSticky =
+      this.creationTool.type === "TEXT" || this.creationTool.type === null;
+    const color = isSticky
+      ? STICKY_PRESETS[this.activeStickyColor]
+      : this.activeShapeColor;
 
     this.creationTool.previewShape = {
       id: crypto.randomUUID(),
@@ -337,17 +362,15 @@ export class BoardRuntime {
       y: worldPoint.y,
       width: 0,
       height: 0,
-      fill: colorPreset.fill,
-      stroke: colorPreset.stroke,
+      fill: color.fill,
+      stroke: color.stroke,
       state: "static",
-      radius: 8,
+      radius: this.creationTool.type === "RECT" ? 8 : 0,
       zIndex: this.entityManager.getMaxZIndex() + 1,
     };
   }
 
   private redrawAll() {
-    console.log("redrawAll ");
-
     const selectedIds = this.interactionManager.getSelectedIds();
     this.renderManager.drawAll(this.camera, this.entityManager, selectedIds);
   }

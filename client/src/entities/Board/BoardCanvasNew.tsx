@@ -1,10 +1,19 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { type CameraController, BoardRuntime } from "../../canvas";
 import { BoardSyncGateway } from "./model/BoardSyncGateway";
-import type { StickyColorId, Tool } from "../Shape";
+import type { ShapeType, StickyColorId, Tool } from "../Shape";
 
 export const MIN_ZOOM = 5;
 export const MAX_ZOOM = 400;
+
+const toolToShapeType: Partial<Record<Tool, ShapeType>> = {
+  rectangle: "RECT",
+  ellipse: "ELLIPSE",
+};
+
+export interface BoardCanvasHandle {
+  setShapeColor: (fill: string, stroke: string) => void;
+}
 
 interface BoardCanvasNewProps {
   boardId: string;
@@ -14,13 +23,13 @@ interface BoardCanvasNewProps {
   onToolComplete: () => void;
 }
 
-export function BoardCanvasNew({
-  boardId,
-  setCamera,
-  activeTool,
-  activeStickyColor,
-  onToolComplete,
-}: BoardCanvasNewProps) {
+export const BoardCanvasNew = forwardRef<
+  BoardCanvasHandle,
+  BoardCanvasNewProps
+>(function BoardCanvasNew(
+  { boardId, setCamera, activeTool, activeStickyColor, onToolComplete },
+  ref,
+) {
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
   const dragCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,12 +39,18 @@ export function BoardCanvasNew({
   const gatewayRef = useRef<BoardSyncGateway | null>(null);
   const clientIdRef = useRef<string>(crypto.randomUUID());
 
+  useImperativeHandle(ref, () => ({
+    setShapeColor: (fill: string, stroke: string) => {
+      runtimeRef.current?.setActiveShapeColor(fill, stroke);
+    },
+  }));
+
   useEffect(() => {
     const runtime = runtimeRef.current;
     if (!runtime) return;
 
     runtime.setActiveStickyColor(activeStickyColor);
-    runtime.setCreationTool(activeTool === "rectangle" ? "RECT" : null);
+    runtime.setCreationTool(toolToShapeType[activeTool] ?? null);
   }, [activeStickyColor, activeTool]);
 
   useEffect(() => {
@@ -116,7 +131,7 @@ export function BoardCanvasNew({
       <canvas
         ref={dragCanvasRef}
         onMouseUp={() => runtimeRef.current?.handleMouseUp()}
-        className="absolute inset-0 touch-none w-full h-full  "
+        className="absolute inset-0 touch-none w-full h-full"
         onWheel={handleWheel}
         onMouseDown={(e) => {
           if (e.button === 2) {
@@ -134,8 +149,8 @@ export function BoardCanvasNew({
       />
       <canvas
         ref={overlayCanvasRef}
-        className="absolute inset-0 pointer-events-none  w-full h-full "
+        className="absolute inset-0 pointer-events-none w-full h-full"
       />
     </div>
   );
-}
+});

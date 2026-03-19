@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { StickyColorId, Tool } from "../../../entities/Shape";
 import { TopBar, Toolbar } from "../../../widgets";
 import type { CameraController } from "../../../canvas";
@@ -13,6 +12,12 @@ export function BoardPage() {
   const [activeStickyColorId, setActiveStickyColorId] =
     useState<StickyColorId>("yellow");
   const [camera, setCamera] = useState<CameraController | null>(null);
+
+  // Ref to canvas so Toolbar can push color changes directly to runtime
+  // without causing a re-render on every color pick.
+  const canvasRef = useRef<{
+    setShapeColor: (fill: string, stroke: string) => void;
+  } | null>(null);
 
   if (!id) return <div>Board not found</div>;
 
@@ -30,9 +35,13 @@ export function BoardPage() {
           setActiveTool={setActiveTool}
           activeStickyColorId={activeStickyColorId}
           setActiveStickyColorId={setActiveStickyColorId}
+          onShapeColorChange={(fill, stroke) => {
+            canvasRef.current?.setShapeColor(fill, stroke);
+          }}
         />
 
         <BoardCanvasNew
+          ref={canvasRef}
           boardId={id}
           setCamera={setCamera}
           activeTool={activeTool}
