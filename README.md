@@ -1,5 +1,7 @@
 # Realtime Board
 
+![photo_2026-03-20_02-57-40](https://github.com/user-attachments/assets/4ad7a45a-50c8-4812-90b6-824cf654e945)
+
 An online board for real-time collaboration.  
 Frontend on React + Vite, backend on Go + GraphQL (gqlgen) with subscriptions.
 
@@ -56,3 +58,5 @@ realtime-board/
 
 - Front: check README.md in client path
 - Back: `go run ./cmd/api`
+
+
