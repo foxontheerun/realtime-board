@@ -111,6 +111,19 @@ export interface ShapeEventPayload {
 
 export class EntityManager {
   private shapes: _Shape[] = SHAPES;
+  private byId = new Map<string, _Shape>();
+  // getShapes() re-sorts only when z-order may have changed, not on every call.
+  private sortDirty = true;
+
+  constructor() {
+    this.reindex();
+  }
+
+  private reindex() {
+    this.byId.clear();
+    for (const s of this.shapes) this.byId.set(s.id, s);
+    this.sortDirty = true;
+  }
 
   private mapRemoteShapeToCanvas(shape: RemoteShape): _Shape {
     return {
@@ -131,6 +144,8 @@ export class EntityManager {
 
   addShape(shape: _Shape) {
     this.shapes.push(shape);
+    this.byId.set(shape.id, shape);
+    this.sortDirty = true;
   }
 
   getMaxZIndex(shapes = this.shapes): number {
@@ -144,7 +159,11 @@ export class EntityManager {
   }
 
   getShapes() {
-    return this.shapes.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+    if (this.sortDirty) {
+      this.shapes.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+      this.sortDirty = false;
+    }
+    return this.shapes;
   }
 
   getDraggedShape() {
@@ -174,21 +193,31 @@ export class EntityManager {
   }
 
   updateShapeList(newShape: _Shape) {
-    const shapes = this.shapes;
-    const currShapeInd = shapes.findIndex((shape) => shape.id === newShape.id);
-    if (currShapeInd === -1) {
-      shapes.push(newShape);
+    const existing = this.byId.get(newShape.id);
+
+    if (!existing) {
+      this.shapes.push(newShape);
+      this.byId.set(newShape.id, newShape);
+      this.sortDirty = true;
       return;
     }
-    shapes[currShapeInd] = newShape;
+
+    // Drag passes back the same object it mutated — nothing to do.
+    if (existing === newShape) return;
+
+    const idx = this.shapes.indexOf(existing);
+    if (idx !== -1) this.shapes[idx] = newShape;
+    this.byId.set(newShape.id, newShape);
+    if ((existing.zIndex ?? 0) !== (newShape.zIndex ?? 0)) this.sortDirty = true;
   }
 
   replaceAll(shapes: RemoteShape[]) {
     this.shapes = shapes.map((shape) => this.mapRemoteShapeToCanvas(shape));
+    this.reindex();
   }
 
   applyTransientPatch(patch: TransientShapePatch): { becameRemote: boolean } {
-    const shape = this.shapes.find((s) => s.id === patch.id);
+    const shape = this.byId.get(patch.id);
     if (!shape) return { becameRemote: false };
 
     const wasRemote = shape.state === "remote-dragging";
@@ -207,30 +236,38 @@ export class EntityManager {
     const { shape, type } = event;
 
     if (type === "DELETED") {
-      const index = this.shapes.findIndex((s) => s.id === shape.id);
-      if (index !== -1) this.shapes.splice(index, 1);
+      const existing = this.byId.get(shape.id);
+      if (existing) {
+        const index = this.shapes.indexOf(existing);
+        if (index !== -1) this.shapes.splice(index, 1);
+        this.byId.delete(shape.id);
+      }
       return;
     }
 
     const nextShape = this.mapRemoteShapeToCanvas(shape); // state будет "static"
-    const existing = this.shapes.find((s) => s.id === shape.id);
+    const existing = this.byId.get(shape.id);
 
     if (!existing) {
       this.shapes.push(nextShape);
+      this.byId.set(nextShape.id, nextShape);
+      this.sortDirty = true;
       return;
     }
 
     Object.assign(existing, nextShape); // сбросит remote-dragging → static
+    this.sortDirty = true;
   }
 
   getById(id: string) {
-    return this.shapes.find((s) => s.id === id) ?? null;
+    return this.byId.get(id) ?? null;
   }
 
   updateById(id: string, patch: Partial<_Shape>) {
-    const s = this.getById(id);
+    const s = this.byId.get(id);
     if (!s) return;
     Object.assign(s, patch);
+    if (patch.zIndex !== undefined) this.sortDirty = true;
   }
 
   findShapeAt(worldPoint: { x: number; y: number }, margin = 0): _Shape | null {
