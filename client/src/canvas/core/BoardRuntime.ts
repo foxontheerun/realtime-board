@@ -46,9 +46,6 @@ export class BoardRuntime {
     previewShape: null,
   };
 
-  // Flag: drag or resize in progress — static layer is not redrawn.
-  private isInteracting = false;
-
   constructor(
     gridCanvas: HTMLCanvasElement,
     mainCanvas: HTMLCanvasElement,
@@ -228,7 +225,6 @@ export class BoardRuntime {
     const interaction = this.interactionManager.getInteraction();
 
     if (interaction.type === "drag" || interaction.type === "resize") {
-      this.isInteracting = true;
       this.renderManager.drawStatic(this.camera, this.entityManager);
       this.renderManager.drawDrag(this.camera, this.entityManager);
       this.renderManager.drawOverlay(
@@ -317,7 +313,6 @@ export class BoardRuntime {
       interactionBefore.type === "drag" || interactionBefore.type === "resize";
 
     this.interactionManager.handleMouseUp();
-    this.isInteracting = false;
 
     if (wasDragOrResize) {
       this.renderManager.drawStatic(this.camera, this.entityManager);

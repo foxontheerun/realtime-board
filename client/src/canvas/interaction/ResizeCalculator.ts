@@ -6,10 +6,7 @@ import {
 } from "../entities";
 
 export class ResizeCalculator {
-  static getShapeManipulationBounds(
-    shape: _Shape,
-    padding = 30,
-  ): ManipulationBounds {
+  static getShapeManipulationBounds(shape: _Shape): ManipulationBounds {
     switch (shape?.type) {
       default:
         return this.getRectBounds(shape);
@@ -22,17 +19,6 @@ export class ResizeCalculator {
       y: shape.y,
       w: shape.width,
       h: shape.height,
-    };
-  }
-
-  private static getFigureBounds(shape: _Shape, padding = 30) {
-    const coef = padding / shape.x;
-
-    return {
-      x: shape.x - padding,
-      y: shape.y - (padding * coef + padding),
-      w: shape.width + padding * 2,
-      h: shape.height + (padding * coef + padding) * 2,
     };
   }
 
