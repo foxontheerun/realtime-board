@@ -107,7 +107,11 @@ export class RenderManager {
 
   drawDrag(camera: CameraController, entityManager: EntityManager) {
     const dragging = entityManager.getShapesOnDragLayer();
-    const movingShapes = dragging.filter((s) => s.state === "dragging");
+    // Include remote-dragging so the dirty rect (and its clip) covers shapes
+    // moved by other clients too, not only the locally dragged ones.
+    const movingShapes = dragging.filter(
+      (s) => s.state === "dragging" || s.state === "remote-dragging",
+    );
 
     let dirtyRect: Rect | null = null;
 
@@ -144,23 +148,6 @@ export class RenderManager {
 
     camera.applyTransform(this.dragCtx);
     this.dragLayer.draw(this.dragCtx, dragging);
-
-    // --- debug: рамка dirtyRect ---
-    // if (dirtyRect) {
-    //   this.dragCtx.save();
-    //   this.dragCtx.setTransform(1, 0, 0, 1, 0, 0); // сброс camera transform
-    //   this.dragCtx.strokeStyle = "rgba(221, 0, 11, 0.89)";
-    //   this.dragCtx.lineWidth = 1;
-    //   this.dragCtx.setLineDash([4, 3]);
-    //   this.dragCtx.strokeRect(
-    //     dirtyRect.x,
-    //     dirtyRect.y,
-    //     dirtyRect.w,
-    //     dirtyRect.h,
-    //   );
-    //   this.dragCtx.restore();
-    // }
-    // --- end debug ---
 
     this.dragCtx.restore();
   }
