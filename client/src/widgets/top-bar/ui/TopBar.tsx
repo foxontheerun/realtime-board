@@ -6,11 +6,13 @@ import { MAX_ZOOM, MIN_ZOOM } from "../../../entities/Board/BoardCanvasNew";
 export function TopBar() {
   const camera = useCamera();
 
-  const [zoomPercent, setZoomPercent] = useState(Math.round(camera.zoom * 100));
+  const [zoomPercent, setZoomPercent] = useState(
+    Math.round(camera.state.zoom * 100),
+  );
 
   useEffect(() => {
     const unsubList = camera.subscribe(() => {
-      setZoomPercent(Math.round(camera.zoom * 100));
+      setZoomPercent(Math.round(camera.state.zoom * 100));
     });
 
     return () => {
@@ -23,11 +25,11 @@ export function TopBar() {
   }, [camera]);
 
   const handleZoomIn = () => {
-    camera.setZoom(Math.min(camera.zoom * 1.05, MAX_ZOOM / 100));
+    camera.setZoom(Math.min(camera.state.zoom * 1.05, MAX_ZOOM / 100));
   };
 
   const handleZoomOut = () => {
-    camera.setZoom(Math.max(camera.zoom * 0.95, MIN_ZOOM / 100));
+    camera.setZoom(Math.max(camera.state.zoom * 0.95, MIN_ZOOM / 100));
   };
 
   return (

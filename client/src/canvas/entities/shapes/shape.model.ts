@@ -1,12 +1,5 @@
 import type { ShapeType } from "../../../entities/Shape";
 
-export class ShapeModel {
-  private shape;
-  constructor(shape: _Shape) {
-    this.shape = shape;
-  }
-}
-
 export interface _Shape {
   id: string;
   x: number;

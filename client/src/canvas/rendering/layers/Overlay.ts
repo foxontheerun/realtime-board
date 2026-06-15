@@ -4,16 +4,12 @@ import { ResizeCalculator } from "../../interaction";
 import { CanvasPainter } from "../../utils";
 import { RESIZE_HANDLE_SIZE } from "./mouseEventHandlingHelpers";
 
-const BOUNDS_PADDING = 30;
-
 const BORDER_COLOR = "#388effff";
 const STROKE_WIDTH = 2;
 export class Overlay {
   drawBounds(ctx: CanvasRenderingContext2D, shape: _Shape, zoom: number) {
-    const manipulationBounds = ResizeCalculator.getShapeManipulationBounds(
-      shape,
-      BOUNDS_PADDING,
-    );
+    const manipulationBounds =
+      ResizeCalculator.getShapeManipulationBounds(shape);
     const borderFigure = {
       ...shape,
       fill: null,

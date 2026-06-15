@@ -1,5 +1,5 @@
 import { Rnd } from "react-rnd";
-import type { Shape } from "../model/types";
+import type { Shape } from "./types";
 import React from "react";
 
 interface ResizableDraggableShapeProps {
