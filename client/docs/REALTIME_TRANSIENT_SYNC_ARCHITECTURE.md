@@ -1,5 +1,20 @@
 # Realtime Transient Sync Architecture (Board Drag / Multi-Select)
 
+## Status (current vs planned)
+
+- ✅ **Implemented**: two streams (transient + persisted), batched transient
+  (`moveShapesTransient` / `shapesMoved`), a single redraw per received frame,
+  sender-side coalescing by shape id, legacy single-shape ops kept alongside.
+- ⏳ **Planned (not in code yet)**: frame ordering via `dragSessionId + seq`
+  (drop out-of-order frames) and explicit transient backpressure / stale-frame
+  dropping.
+
+The "Target Protocol Model" below is the **intended** richer protocol — the
+shipped batch payload is currently just `{ clientID, shapes[] }`, without
+`seq` / `dragSessionId` / `sentAt`.
+
+---
+
 ## Why This Document Exists
 
 This is a short reference on **how to correctly design realtime drag synchronization** (especially for multi-select),
