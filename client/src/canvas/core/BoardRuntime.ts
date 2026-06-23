@@ -15,6 +15,7 @@ import { ResizeController, DragController } from "../interaction";
 import { InteractionManager } from "../interaction/InteractionManager";
 import { RenderManager } from "../rendering/RenderManager";
 import { CoordinateTransformer } from "../utils/CoordinateTransformer";
+import { LockManager } from "../collab/LockManager";
 
 export class BoardRuntime {
   public camera: CameraController;
@@ -26,6 +27,8 @@ export class BoardRuntime {
   public entityManager: EntityManager;
   private dragController: DragController;
   private resizeController: ResizeController;
+  private lockManager = new LockManager();
+  private clientId: string | null = null;
 
   private unsubscribeCamera?: () => void;
   private activeStickyColor: StickyColorId = "yellow";
@@ -104,6 +107,30 @@ export class BoardRuntime {
     this.activeShapeColor = { fill, stroke };
   }
 
+  setClientId(clientId: string) {
+    this.clientId = clientId;
+  }
+
+  private acquireLocks(ids: string[]) {
+    const clientId = this.clientId;
+    if (!clientId) return;
+    const now = Date.now();
+    ids.forEach((id) => this.lockManager.acquire(id, clientId, now));
+  }
+
+  private renewLocks(ids: string[]) {
+    const clientId = this.clientId;
+    if (!clientId) return;
+    const now = Date.now();
+    ids.forEach((id) => this.lockManager.renew(id, clientId, now));
+  }
+
+  private releaseLocks(ids: string[]) {
+    const clientId = this.clientId;
+    if (!clientId) return;
+    ids.forEach((id) => this.lockManager.release(id, clientId));
+  }
+
   private syncCallbacks: {
     onLocalShapeTransient?: (shape: _Shape) => void;
     onLocalShapePersisted?: (shape: _Shape) => void;
@@ -131,9 +158,17 @@ export class BoardRuntime {
   }
 
   applyTransientPatches(patches: TransientShapePatch[]) {
+    const now = Date.now();
     let anyBecameRemote = false;
 
     for (const patch of patches) {
+      if (
+        this.clientId !== null &&
+        this.lockManager.getOwner(patch.id, now) === this.clientId
+      ) {
+        continue;
+      }
+
       const { becameRemote } = this.entityManager.applyTransientPatch(patch);
       if (becameRemote) anyBecameRemote = true;
     }
@@ -225,6 +260,7 @@ export class BoardRuntime {
     const interaction = this.interactionManager.getInteraction();
 
     if (interaction.type === "drag" || interaction.type === "resize") {
+      this.acquireLocks(this.interactionManager.getSelectedIds());
       this.renderManager.drawStatic(this.camera, this.entityManager);
       this.renderManager.drawDrag(this.camera, this.entityManager);
       this.renderManager.drawOverlay(
@@ -275,6 +311,7 @@ export class BoardRuntime {
     if (interaction.type === "pan" || interaction.type === "idle") return;
 
     if (interaction.type === "drag" || interaction.type === "resize") {
+      this.renewLocks(this.interactionManager.getSelectedIds());
       this.renderManager.drawDrag(this.camera, this.entityManager);
       this.renderManager.drawOverlay(
         this.camera,
@@ -315,6 +352,7 @@ export class BoardRuntime {
     this.interactionManager.handleMouseUp();
 
     if (wasDragOrResize) {
+      this.releaseLocks(interactionBefore.selectedIds);
       this.renderManager.drawStatic(this.camera, this.entityManager);
       this.renderManager.drawDrag(this.camera, this.entityManager);
       this.renderManager.drawOverlay(

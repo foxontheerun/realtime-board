@@ -83,6 +83,7 @@ export const BoardCanvasNew = forwardRef<
       overlayCanvasRef.current,
     );
 
+    runtimeRef.current.setClientId(clientIdRef.current);
     setCamera(runtimeRef.current.camera);
     gatewayRef.current = new BoardSyncGateway(
       boardId,
