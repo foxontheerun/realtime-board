@@ -1,6 +1,7 @@
 import { apolloClient } from "../../../app/apolloClient";
 import {
   BOARD_QUERY,
+  DELETE_SHAPE_MUTATION,
   MOVE_SHAPES_TRANSIENT_MUTATION,
   SET_SHAPE_LOCK_MUTATION,
   SHAPE_EVENTS_SUBSCRIPTION,
@@ -126,6 +127,17 @@ export class BoardSyncGateway {
       });
 
     this.subscriptions.push(movedSub, eventsSub, locksSub);
+  }
+
+  sendDelete(shapeId: string) {
+    void apolloClient
+      .mutate({
+        mutation: DELETE_SHAPE_MUTATION,
+        variables: { boardId: this.boardId, shapeId },
+      })
+      .catch((error) => {
+        console.error("deleteShape mutation error", error);
+      });
   }
 
   sendLock(shapeId: string, action: LockAction) {

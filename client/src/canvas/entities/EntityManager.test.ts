@@ -271,3 +271,20 @@ describe("EntityManager z-order", () => {
     expect(em.bringToFront("zzz")).toEqual([]);
   });
 });
+
+describe("EntityManager.removeShape", () => {
+  it("removes a shape and reports success", () => {
+    const em = managerWith([remote({ id: "a" }), remote({ id: "b" })]);
+
+    expect(em.removeShape("a")).toBe(true);
+    expect(em.getById("a")).toBeNull();
+    expect(em.getShapes().map((s) => s.id)).toEqual(["b"]);
+  });
+
+  it("returns false for an unknown id", () => {
+    const em = managerWith([remote({ id: "a" })]);
+
+    expect(em.removeShape("zzz")).toBe(false);
+    expect(em.getById("a")).not.toBeNull();
+  });
+});

@@ -184,12 +184,14 @@ export class BoardRuntime {
     onLocalShapeTransient?: (shape: _Shape) => void;
     onLocalShapePersisted?: (shape: _Shape) => void;
     onLocalLock?: (shapeId: string, action: LockAction) => void;
+    onLocalShapeDeleted?: (shapeId: string) => void;
   } = {};
 
   setSyncCallbacks(callbacks: {
     onLocalShapeTransient?: (shape: _Shape) => void;
     onLocalShapePersisted?: (shape: _Shape) => void;
     onLocalLock?: (shapeId: string, action: LockAction) => void;
+    onLocalShapeDeleted?: (shapeId: string) => void;
   }) {
     this.syncCallbacks = callbacks;
 
@@ -323,6 +325,13 @@ export class BoardRuntime {
       this.entityManager,
       this.interactionManager.getSelectedIds(),
     );
+  }
+
+  deleteShape(id: string) {
+    if (!this.entityManager.removeShape(id)) return;
+    this.interactionManager.selectById("");
+    this.redrawAll();
+    this.syncCallbacks.onLocalShapeDeleted?.(id);
   }
 
   handleMouseDown(screenX: number, screenY: number) {

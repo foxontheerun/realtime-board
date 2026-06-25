@@ -148,6 +148,16 @@ export class EntityManager {
     this.sortDirty = true;
   }
 
+  removeShape(id: string): boolean {
+    const shape = this.byId.get(id);
+    if (!shape) return false;
+
+    const index = this.shapes.indexOf(shape);
+    if (index !== -1) this.shapes.splice(index, 1);
+    this.byId.delete(id);
+    return true;
+  }
+
   getMaxZIndex(shapes = this.shapes): number {
     if (shapes.length === 0) return 0;
     return Math.max(...shapes.map((s) => s.zIndex ?? 0));

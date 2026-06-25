@@ -115,6 +115,9 @@ export const BoardCanvasNew = forwardRef<
       onLocalLock: (shapeId, action) => {
         gatewayRef.current?.sendLock(shapeId, action);
       },
+      onLocalShapeDeleted: (shapeId) => {
+        gatewayRef.current?.sendDelete(shapeId);
+      },
     });
 
     gatewayRef.current.connect().catch((error) => {
@@ -226,6 +229,7 @@ export const BoardCanvasNew = forwardRef<
           onMoveForward={() => runtimeRef.current?.moveForward(menu.shapeId)}
           onMoveBackward={() => runtimeRef.current?.moveBackward(menu.shapeId)}
           onSendToBack={() => runtimeRef.current?.sendToBack(menu.shapeId)}
+          onDelete={() => runtimeRef.current?.deleteShape(menu.shapeId)}
         />
       )}
     </div>
