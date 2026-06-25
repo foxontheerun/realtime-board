@@ -293,20 +293,24 @@ export class BoardRuntime {
     this.syncCallbacks.onLocalShapePersisted?.(shape);
   }
 
-  bringToFront(id: string) {
-    this.applyZOrder(this.entityManager.bringToFront(id));
+  getSelectedIds(): string[] {
+    return this.interactionManager.getSelectedIds();
   }
 
-  sendToBack(id: string) {
-    this.applyZOrder(this.entityManager.sendToBack(id));
+  bringToFront(ids: string[]) {
+    this.applyZOrder(this.entityManager.bringToFront(ids));
   }
 
-  moveForward(id: string) {
-    this.applyZOrder(this.entityManager.moveForward(id));
+  sendToBack(ids: string[]) {
+    this.applyZOrder(this.entityManager.sendToBack(ids));
   }
 
-  moveBackward(id: string) {
-    this.applyZOrder(this.entityManager.moveBackward(id));
+  moveForward(ids: string[]) {
+    this.applyZOrder(this.entityManager.moveForward(ids));
+  }
+
+  moveBackward(ids: string[]) {
+    this.applyZOrder(this.entityManager.moveBackward(ids));
   }
 
   private applyZOrder(changed: _Shape[]) {
@@ -327,11 +331,12 @@ export class BoardRuntime {
     );
   }
 
-  deleteShape(id: string) {
-    if (!this.entityManager.removeShape(id)) return;
+  deleteShapes(ids: string[]) {
+    const removed = this.entityManager.removeShapes(ids);
+    if (removed.length === 0) return;
     this.interactionManager.selectById("");
     this.redrawAll();
-    this.syncCallbacks.onLocalShapeDeleted?.(id);
+    removed.forEach((id) => this.syncCallbacks.onLocalShapeDeleted?.(id));
   }
 
   handleMouseDown(screenX: number, screenY: number) {

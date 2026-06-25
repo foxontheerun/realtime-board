@@ -238,37 +238,78 @@ describe("EntityManager z-order", () => {
 
   it("bringToFront moves a shape above all others", () => {
     const em = threeShapes();
-    em.bringToFront("a");
+    em.bringToFront(["a"]);
     expect(order(em)).toEqual(["b", "c", "a"]);
   });
 
   it("sendToBack moves a shape below all others", () => {
     const em = threeShapes();
-    em.sendToBack("c");
+    em.sendToBack(["c"]);
     expect(order(em)).toEqual(["c", "a", "b"]);
   });
 
   it("moveForward swaps with the next shape up", () => {
     const em = threeShapes();
-    em.moveForward("a");
+    em.moveForward(["a"]);
     expect(order(em)).toEqual(["b", "a", "c"]);
   });
 
   it("moveBackward swaps with the next shape down", () => {
     const em = threeShapes();
-    em.moveBackward("c");
+    em.moveBackward(["c"]);
     expect(order(em)).toEqual(["a", "c", "b"]);
   });
 
   it("moveForward on the top shape is a no-op", () => {
     const em = threeShapes();
-    expect(em.moveForward("c")).toEqual([]);
+    expect(em.moveForward(["c"])).toEqual([]);
     expect(order(em)).toEqual(["a", "b", "c"]);
   });
 
   it("returns nothing for an unknown id", () => {
     const em = threeShapes();
-    expect(em.bringToFront("zzz")).toEqual([]);
+    expect(em.bringToFront(["zzz"])).toEqual([]);
+  });
+});
+
+describe("EntityManager z-order (multiple shapes)", () => {
+  const fourShapes = () =>
+    managerWith([
+      remote({ id: "a", zIndex: 0 }),
+      remote({ id: "b", zIndex: 1 }),
+      remote({ id: "c", zIndex: 2 }),
+      remote({ id: "d", zIndex: 3 }),
+    ]);
+  const order = (em: EntityManager) => em.getShapes().map((s) => s.id);
+
+  it("bringToFront keeps the selection's relative order on top", () => {
+    const em = fourShapes();
+    em.bringToFront(["c", "a"]);
+    expect(order(em)).toEqual(["b", "d", "a", "c"]);
+  });
+
+  it("sendToBack keeps the selection's relative order at the bottom", () => {
+    const em = fourShapes();
+    em.sendToBack(["d", "b"]);
+    expect(order(em)).toEqual(["b", "d", "a", "c"]);
+  });
+
+  it("moveForward steps a contiguous group up without splitting it", () => {
+    const em = fourShapes();
+    em.moveForward(["a", "b"]);
+    expect(order(em)).toEqual(["c", "a", "b", "d"]);
+  });
+
+  it("moveForward steps a scattered group over its neighbours", () => {
+    const em = fourShapes();
+    em.moveForward(["a", "c"]);
+    expect(order(em)).toEqual(["b", "a", "d", "c"]);
+  });
+
+  it("moveBackward steps a scattered group down over its neighbours", () => {
+    const em = fourShapes();
+    em.moveBackward(["b", "d"]);
+    expect(order(em)).toEqual(["b", "a", "d", "c"]);
   });
 });
 

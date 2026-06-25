@@ -60,7 +60,7 @@ export const BoardCanvasNew = forwardRef<
   const [menu, setMenu] = useState<{
     x: number;
     y: number;
-    shapeId: string;
+    ids: string[];
   } | null>(null);
 
   useImperativeHandle(ref, () => ({
@@ -207,12 +207,16 @@ export const BoardCanvasNew = forwardRef<
             e.clientX,
             e.clientY,
           );
-          if (shape) {
-            runtimeRef.current?.selectShape(shape.id);
-            setMenu({ x: e.clientX, y: e.clientY, shapeId: shape.id });
-          } else {
+          if (!shape) {
             setMenu(null);
+            return;
           }
+          const selected = runtimeRef.current?.getSelectedIds() ?? [];
+          const ids = selected.includes(shape.id) ? selected : [shape.id];
+          if (!selected.includes(shape.id)) {
+            runtimeRef.current?.selectShape(shape.id);
+          }
+          setMenu({ x: e.clientX, y: e.clientY, ids });
         }}
       />
       <canvas
@@ -225,11 +229,11 @@ export const BoardCanvasNew = forwardRef<
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          onBringToFront={() => runtimeRef.current?.bringToFront(menu.shapeId)}
-          onMoveForward={() => runtimeRef.current?.moveForward(menu.shapeId)}
-          onMoveBackward={() => runtimeRef.current?.moveBackward(menu.shapeId)}
-          onSendToBack={() => runtimeRef.current?.sendToBack(menu.shapeId)}
-          onDelete={() => runtimeRef.current?.deleteShape(menu.shapeId)}
+          onBringToFront={() => runtimeRef.current?.bringToFront(menu.ids)}
+          onMoveForward={() => runtimeRef.current?.moveForward(menu.ids)}
+          onMoveBackward={() => runtimeRef.current?.moveBackward(menu.ids)}
+          onSendToBack={() => runtimeRef.current?.sendToBack(menu.ids)}
+          onDelete={() => runtimeRef.current?.deleteShapes(menu.ids)}
         />
       )}
     </div>

@@ -158,6 +158,14 @@ export class EntityManager {
     return true;
   }
 
+  removeShapes(ids: string[]): string[] {
+    const removed: string[] = [];
+    for (const id of ids) {
+      if (this.removeShape(id)) removed.push(id);
+    }
+    return removed;
+  }
+
   getMaxZIndex(shapes = this.shapes): number {
     if (shapes.length === 0) return 0;
     return Math.max(...shapes.map((s) => s.zIndex ?? 0));
@@ -168,55 +176,98 @@ export class EntityManager {
     return Math.min(...shapes.map((s) => s.zIndex ?? 0));
   }
 
-  bringToFront(id: string): _Shape[] {
-    const shape = this.byId.get(id);
-    if (!shape) return [];
-    shape.zIndex = this.getMaxZIndex() + 1;
-    this.sortDirty = true;
-    return [shape];
+  // Move the selection above every other shape, keeping its internal order.
+  bringToFront(ids: string[]): _Shape[] {
+    const selected = this.shapesByIds(ids);
+    if (selected.length === 0) return [];
+    selected.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+    let z = this.getMaxZIndex();
+    const changed: _Shape[] = [];
+    for (const shape of selected) {
+      z += 1;
+      if ((shape.zIndex ?? 0) !== z) {
+        shape.zIndex = z;
+        changed.push(shape);
+      }
+    }
+    if (changed.length > 0) this.sortDirty = true;
+    return changed;
   }
 
-  sendToBack(id: string): _Shape[] {
-    const shape = this.byId.get(id);
-    if (!shape) return [];
-    shape.zIndex = this.getMinZIndex() - 1;
-    this.sortDirty = true;
-    return [shape];
+  // Move the selection below every other shape, keeping its internal order.
+  sendToBack(ids: string[]): _Shape[] {
+    const selected = this.shapesByIds(ids);
+    if (selected.length === 0) return [];
+    selected.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+
+    let z = this.getMinZIndex() - selected.length;
+    const changed: _Shape[] = [];
+    for (const shape of selected) {
+      if ((shape.zIndex ?? 0) !== z) {
+        shape.zIndex = z;
+        changed.push(shape);
+      }
+      z += 1;
+    }
+    if (changed.length > 0) this.sortDirty = true;
+    return changed;
   }
 
-  moveForward(id: string): _Shape[] {
-    return this.swapWithNeighbor(id, "up");
+  moveForward(ids: string[]): _Shape[] {
+    return this.shiftLayer(ids, "up");
   }
 
-  moveBackward(id: string): _Shape[] {
-    return this.swapWithNeighbor(id, "down");
+  moveBackward(ids: string[]): _Shape[] {
+    return this.shiftLayer(ids, "down");
   }
 
-  private swapWithNeighbor(id: string, dir: "up" | "down"): _Shape[] {
-    const shape = this.byId.get(id);
-    if (!shape) return [];
-    const z = shape.zIndex ?? 0;
+  // Reorder the stack so the selection moves one layer up/down, stepping over
+  // the nearest non-selected neighbour and never reordering within the group.
+  private shiftLayer(ids: string[], dir: "up" | "down"): _Shape[] {
+    const idSet = new Set(ids);
+    const ordered = this.getShapes().slice();
+    const zValues = this.getShapes().map((s) => s.zIndex ?? 0);
+    if (ordered.length === 0) return [];
 
-    let neighbor: _Shape | null = null;
-    for (const s of this.shapes) {
-      if (s === shape) continue;
-      const sz = s.zIndex ?? 0;
-      const isCandidate = dir === "up" ? sz > z : sz < z;
-      if (!isCandidate) continue;
-      const closer =
-        neighbor === null ||
-        (dir === "up"
-          ? sz < (neighbor.zIndex ?? 0)
-          : sz > (neighbor.zIndex ?? 0));
-      if (closer) neighbor = s;
+    const isSelected = (shape: _Shape) => idSet.has(shape.id);
+
+    if (dir === "up") {
+      for (let i = ordered.length - 1; i >= 0; i--) {
+        if (
+          i + 1 < ordered.length &&
+          isSelected(ordered[i]) &&
+          !isSelected(ordered[i + 1])
+        ) {
+          [ordered[i], ordered[i + 1]] = [ordered[i + 1], ordered[i]];
+        }
+      }
+    } else {
+      for (let i = 0; i < ordered.length; i++) {
+        if (i > 0 && isSelected(ordered[i]) && !isSelected(ordered[i - 1])) {
+          [ordered[i], ordered[i - 1]] = [ordered[i - 1], ordered[i]];
+        }
+      }
     }
 
-    if (!neighbor) return [];
+    const changed: _Shape[] = [];
+    ordered.forEach((shape, i) => {
+      if ((shape.zIndex ?? 0) !== zValues[i]) {
+        shape.zIndex = zValues[i];
+        changed.push(shape);
+      }
+    });
+    if (changed.length > 0) this.sortDirty = true;
+    return changed;
+  }
 
-    shape.zIndex = neighbor.zIndex ?? 0;
-    neighbor.zIndex = z;
-    this.sortDirty = true;
-    return [shape, neighbor];
+  private shapesByIds(ids: string[]): _Shape[] {
+    const result: _Shape[] = [];
+    for (const id of ids) {
+      const shape = this.byId.get(id);
+      if (shape) result.push(shape);
+    }
+    return result;
   }
 
   getShapes() {
