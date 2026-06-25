@@ -31,6 +31,7 @@ export class BoardRuntime {
   private resizeController: ResizeController;
   private lockManager = new LockManager();
   private clientId: string | null = null;
+  private lockSweepTimer?: ReturnType<typeof setInterval>;
 
   private unsubscribeCamera?: () => void;
   private activeStickyColor: StickyColorId = "yellow";
@@ -93,6 +94,8 @@ export class BoardRuntime {
 
     this.updateSize();
     this.redrawAll();
+
+    this.lockSweepTimer = setInterval(() => this.sweepStaleLocks(), 1000);
   }
 
   setCreationTool(type: ShapeType | null) {
@@ -152,6 +155,29 @@ export class BoardRuntime {
   // client refreshes that client's lock on the shape.
   renewRemoteLock(shapeId: string, clientId: string) {
     this.lockManager.acquire(shapeId, clientId, Date.now());
+  }
+
+  // Recover shapes left in remote-dragging by a client that vanished without
+  // releasing (e.g. closed its tab): once its lease lapses, return them to static.
+  private sweepStaleLocks() {
+    const now = Date.now();
+    this.lockManager.sweepExpired(now);
+
+    let changed = false;
+    for (const shape of this.entityManager.getShapes()) {
+      if (
+        shape.state === "remote-dragging" &&
+        this.lockManager.getOwner(shape.id, now) === null
+      ) {
+        shape.state = "static";
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.renderManager.drawStatic(this.camera, this.entityManager);
+      this.renderManager.drawDrag(this.camera, this.entityManager);
+    }
   }
 
   private syncCallbacks: {
@@ -481,6 +507,7 @@ export class BoardRuntime {
   }
 
   destroy() {
+    if (this.lockSweepTimer !== undefined) clearInterval(this.lockSweepTimer);
     this.unsubscribeCamera?.();
   }
 }
