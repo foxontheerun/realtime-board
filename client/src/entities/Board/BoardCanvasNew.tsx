@@ -1,8 +1,15 @@
-import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import {
+  useRef,
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { type CameraController, BoardRuntime } from "../../canvas";
 import { BoardSyncGateway } from "./model/BoardSyncGateway";
 import type { ShapeType, StickyColorId, Tool } from "../Shape";
 import type { EditingContextValue } from "./EditingContext";
+import { ContextMenu } from "../../features/shape-context-menu/ui/ContextMenu";
 
 export const MIN_ZOOM = 5;
 export const MAX_ZOOM = 400;
@@ -49,6 +56,12 @@ export const BoardCanvasNew = forwardRef<
   const runtimeRef = useRef<BoardRuntime | null>(null);
   const gatewayRef = useRef<BoardSyncGateway | null>(null);
   const clientIdRef = useRef<string>(crypto.randomUUID());
+
+  const [menu, setMenu] = useState<{
+    x: number;
+    y: number;
+    shapeId: string;
+  } | null>(null);
 
   useImperativeHandle(ref, () => ({
     setShapeColor: (fill: string, stroke: string) => {
@@ -185,12 +198,36 @@ export const BoardCanvasNew = forwardRef<
         onMouseMove={(e) =>
           runtimeRef.current?.handleMouseMove(e.clientX, e.clientY)
         }
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          const shape = runtimeRef.current?.findShapeAtScreen(
+            e.clientX,
+            e.clientY,
+          );
+          if (shape) {
+            runtimeRef.current?.selectShape(shape.id);
+            setMenu({ x: e.clientX, y: e.clientY, shapeId: shape.id });
+          } else {
+            setMenu(null);
+          }
+        }}
       />
       <canvas
         ref={overlayCanvasRef}
         className="absolute inset-0 pointer-events-none w-full h-full"
       />
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          onBringToFront={() => runtimeRef.current?.bringToFront(menu.shapeId)}
+          onMoveForward={() => runtimeRef.current?.moveForward(menu.shapeId)}
+          onMoveBackward={() => runtimeRef.current?.moveBackward(menu.shapeId)}
+          onSendToBack={() => runtimeRef.current?.sendToBack(menu.shapeId)}
+        />
+      )}
     </div>
   );
 });

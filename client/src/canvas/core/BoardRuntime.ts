@@ -291,6 +291,40 @@ export class BoardRuntime {
     this.syncCallbacks.onLocalShapePersisted?.(shape);
   }
 
+  bringToFront(id: string) {
+    this.applyZOrder(this.entityManager.bringToFront(id));
+  }
+
+  sendToBack(id: string) {
+    this.applyZOrder(this.entityManager.sendToBack(id));
+  }
+
+  moveForward(id: string) {
+    this.applyZOrder(this.entityManager.moveForward(id));
+  }
+
+  moveBackward(id: string) {
+    this.applyZOrder(this.entityManager.moveBackward(id));
+  }
+
+  private applyZOrder(changed: _Shape[]) {
+    if (changed.length === 0) return;
+    this.redrawAll();
+    changed.forEach((shape) =>
+      this.syncCallbacks.onLocalShapePersisted?.(shape),
+    );
+  }
+
+  selectShape(id: string) {
+    this.interactionManager.selectById(id);
+    this.renderManager.drawStatic(this.camera, this.entityManager);
+    this.renderManager.drawOverlay(
+      this.camera,
+      this.entityManager,
+      this.interactionManager.getSelectedIds(),
+    );
+  }
+
   handleMouseDown(screenX: number, screenY: number) {
     const worldPoint = this.coordinateTransformer.screenToWorld(
       screenX,

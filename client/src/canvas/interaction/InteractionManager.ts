@@ -207,6 +207,12 @@ export class InteractionManager {
     return true;
   }
 
+  selectById(id: string) {
+    const shape = this.entityManager.getById(id);
+    this.selectShapes(shape ? [shape] : []);
+    this.interaction = { type: "idle", selectedIds: shape ? [id] : [] };
+  }
+
   private selectShapes(shapes: _Shape[]) {
     this.entityManager.clearSelection();
     shapes.forEach((shape) => {
