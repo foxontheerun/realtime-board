@@ -1,5 +1,5 @@
 import { test, type Page } from "@playwright/test";
-import { openBoard, drawRectangle } from "./helpers";
+import { openBoard, drawShape } from "./helpers";
 
 function waitForFrame(page: Page, needle: string): Promise<void> {
   return new Promise((resolve) => {
@@ -25,7 +25,7 @@ test("a shape drawn in one client is broadcast to another", async ({
   await openBoard(pageA, "e2e-create");
   await openBoard(pageB, "e2e-create");
 
-  await drawRectangle(pageA, [520, 300], [660, 420]);
+  await drawShape(pageA, "rectangle", [520, 300], [660, 420]);
 
   await shapeEventOnB;
 
@@ -47,7 +47,7 @@ test("dragging a shape broadcasts a lock and its movement", async ({
   await openBoard(pageA, "e2e-drag");
   await openBoard(pageB, "e2e-drag");
 
-  await drawRectangle(pageA, [300, 300], [440, 420]);
+  await drawShape(pageA, "rectangle", [300, 300], [440, 420]);
 
   // Grab the shape near its centre and drag it.
   await pageA.mouse.move(370, 360);
