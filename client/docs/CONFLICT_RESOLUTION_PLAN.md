@@ -11,27 +11,24 @@ How we will build conflict handling for concurrent shape manipulation
 
 Decision: **soft-lock + LWW** (chosen over full Figma-style server ordering; see §2).
 
-Branches (not merged yet):
-- `feat/lock-manager` — P1, P2 and P3 server side.
-- `fix/remote-drag-zorder` — related render fix (correct z-order for shapes
-  dragged by other clients). Independent of locks; verified, PR ready.
+Branch `feat/lock-manager` (has master merged in for the z-order fix):
 
-Done:
+Done — **locks work across clients** (verified live on two tabs):
 - **P1 ✅** `LockManager` pure module + 18 unit tests (`client/src/canvas/collab/`).
 - **P2 ✅** wired into `BoardRuntime`: acquire on drag start, renew per frame,
   release on mouse up, and skip incoming transient patches for shapes the local
-  client holds. Local side only so far.
-- **P3 server ✅** `LockEvent`/`LockAction`, `setShapeLock` mutation, `shapeLocks`
-  subscription, `server/locks` pub/sub. Verified publish→subscribe end to end.
+  client holds.
+- **P3 ✅** server (`setShapeLock` / `shapeLocks` + `server/locks` pub/sub) and
+  client (gql docs, broadcast ACQUIRE/RELEASE, shared `LockManager` fed by the
+  `shapeLocks` subscription, and a grab guard in `handleMouseDown`). Renew is
+  piggybacked on the transient stream so a held shape survives a long drag.
 
 Next:
-- **P3 client ⏳** — add `SET_SHAPE_LOCK` mutation + `SHAPE_LOCKS` subscription to
-  `board.gql.ts`; in `BoardSyncGateway` send locks on acquire/release and feed
-  incoming lock events into a **shared** `LockManager` (it currently lives private
-  inside `BoardRuntime` — the gateway needs access). Only then do locks work
-  across clients (two tabs: the second can't grab a held shape).
-- **P4 ⏳** renew via piggyback on the transient stream; sweep on disconnect.
+- **P4 (partial) ⏳** — piggyback renew done; still missing an explicit
+  `sweepExpired` on a timer / disconnect (currently self-heals lazily via the
+  lease, since queries treat expired locks as free).
 - **P5 / P6 ⏳** convergence simulation tests; Playground/Playwright smoke.
+- **Nice-to-have** — visual "locked by someone else" indicator.
 
 Notes:
 - To run the lock server: restart `go run ./cmd/api`. To re-run gqlgen codegen on
@@ -175,9 +172,10 @@ non-deterministic ordering). Layers:
 - [x] **P1 — `LockManager`** pure module + unit tests (acquire/release/expire/contention).
 - [x] **P2 — Apply-path guard.** Wired into `BoardRuntime`: lifecycle + skip transient
       patches for shapes the local client holds.
-- [~] **P3 — Protocol.** Server done (`setShapeLock` + `shapeLocks`); **client wiring
-      pending** (gateway send/subscribe + shared `LockManager`).
-- [ ] **P4 — Lifecycle.** Renew via piggyback on transient; sweep on timeout/disconnect.
+- [x] **P3 — Protocol.** Server (`setShapeLock` + `shapeLocks`) and client (gateway
+      send/subscribe + shared `LockManager` + grab guard). Locks work across clients.
+- [~] **P4 — Lifecycle.** Renew piggybacked on transient (done); explicit
+      `sweepExpired` on a timer / disconnect still pending.
 - [ ] **P5 — Simulation tests.** Multi-client convergence harness + the 4 invariants.
 - [ ] **P6 — E2E smoke.** Playwright, two contexts, same-shape contention.
 
