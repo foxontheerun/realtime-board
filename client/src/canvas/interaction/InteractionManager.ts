@@ -210,7 +210,7 @@ export class InteractionManager {
   private selectShapes(shapes: _Shape[]) {
     this.entityManager.clearSelection();
     shapes.forEach((shape) => {
-      shape.state = "dragging";
+      shape.state = "selected";
     });
   }
 

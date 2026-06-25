@@ -217,4 +217,12 @@ describe("EntityManager.getShapesOnDragLayer", () => {
     expect(ids).toContain("mid");
     expect(ids).not.toContain("low");
   });
+
+  it("keeps selected (not dragging) shapes off the drag layer", () => {
+    const em = managerWith([remote({ id: "a" })]);
+    const shape = em.getById("a");
+    if (shape) shape.state = "selected";
+
+    expect(em.getShapesOnDragLayer()).toEqual([]);
+  });
 });
