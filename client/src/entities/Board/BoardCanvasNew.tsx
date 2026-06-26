@@ -2,6 +2,7 @@ import {
   useRef,
   useEffect,
   useState,
+  useCallback,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -9,10 +10,13 @@ import { type CameraController, BoardRuntime } from "../../canvas";
 import { BoardSyncGateway } from "./model/BoardSyncGateway";
 import type { ShapeType, StickyColorId, Tool } from "../Shape";
 import type { EditingContextValue } from "./EditingContext";
-import { ContextMenu } from "../../features/shape-context-menu/ui/ContextMenu";
+import { SelectionToolbar } from "../../features/shape-context-menu/ui/SelectionToolbar";
 
 export const MIN_ZOOM = 5;
 export const MAX_ZOOM = 400;
+
+// Constant screen-space gap between a shape and its floating toolbar.
+const TOOLBAR_GAP = 12;
 
 const toolToShapeType: Partial<Record<Tool, ShapeType>> = {
   sticker: "STICKER",
@@ -57,12 +61,34 @@ export const BoardCanvasNew = forwardRef<
   const gatewayRef = useRef<BoardSyncGateway | null>(null);
   const clientIdRef = useRef<string>(crypto.randomUUID());
 
-  const [menu, setMenu] = useState<{
-    x: number;
-    y: number;
+  const [selection, setSelection] = useState<{
     ids: string[];
     isLocked: boolean;
   } | null>(null);
+  const [toolbar, setToolbar] = useState<{
+    x: number;
+    y: number;
+    visible: boolean;
+  } | null>(null);
+  const pointerDownRef = useRef(false);
+
+  // Anchors the toolbar above the selection's current screen position.
+  const showToolbar = useCallback(() => {
+    const runtime = runtimeRef.current;
+    const ids = runtime?.getSelectedIds() ?? [];
+    if (!runtime || ids.length === 0) {
+      setToolbar(null);
+      return;
+    }
+    const rect = runtime.getSelectionScreenRect(ids);
+    const canvas = dragCanvasRef.current?.getBoundingClientRect();
+    if (!rect || !canvas) return;
+    setToolbar({
+      x: canvas.left + rect.x + rect.w / 2,
+      y: canvas.top + rect.y - TOOLBAR_GAP,
+      visible: true,
+    });
+  }, []);
 
   useImperativeHandle(ref, () => ({
     setShapeColor: (fill: string, stroke: string) => {
@@ -119,6 +145,13 @@ export const BoardCanvasNew = forwardRef<
       onLocalShapeDeleted: (shapeId) => {
         gatewayRef.current?.sendDelete(shapeId);
       },
+      onSelectionChange: (ids) => {
+        setSelection(
+          ids.length > 0
+            ? { ids, isLocked: runtimeRef.current?.areAllLocked(ids) ?? false }
+            : null,
+        );
+      },
     });
 
     gatewayRef.current.connect().catch((error) => {
@@ -138,6 +171,31 @@ export const BoardCanvasNew = forwardRef<
       runtimeRef.current = null;
     };
   }, [boardId, setCamera]);
+
+  // Hide the toolbar while the camera is moving (pan/zoom); re-anchor it once
+  // the scene is static again, like Miro.
+  useEffect(() => {
+    if (!selection) return;
+    const camera = runtimeRef.current?.camera;
+    if (!camera) return;
+
+    let settleTimer: number;
+    const onCameraChange = () => {
+      setToolbar((current) =>
+        current ? { ...current, visible: false } : current,
+      );
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        if (!pointerDownRef.current) showToolbar();
+      }, 120);
+    };
+
+    const unsubscribe = camera.subscribe(onCameraChange);
+    return () => {
+      window.clearTimeout(settleTimer);
+      unsubscribe();
+    };
+  }, [selection, showToolbar]);
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!runtimeRef.current) return;
@@ -186,58 +244,47 @@ export const BoardCanvasNew = forwardRef<
       />
       <canvas
         ref={dragCanvasRef}
-        onMouseUp={() => runtimeRef.current?.handleMouseUp()}
+        onMouseUp={() => {
+          pointerDownRef.current = false;
+          runtimeRef.current?.handleMouseUp();
+          showToolbar();
+        }}
         className="absolute inset-0 touch-none w-full h-full"
         onWheel={handleWheel}
         onDoubleClick={handleDblClick}
         onMouseDown={(e) => {
+          if (e.button !== 0 && e.button !== 2) return;
+          pointerDownRef.current = true;
+          setToolbar((current) =>
+            current ? { ...current, visible: false } : current,
+          );
           if (e.button === 2) {
             runtimeRef.current?.handlePanStart(e.clientX, e.clientY);
             return;
           }
-          if (e.button === 0) {
-            runtimeRef.current?.handleMouseDown(e.clientX, e.clientY);
-          }
+          runtimeRef.current?.handleMouseDown(e.clientX, e.clientY);
         }}
         onMouseMove={(e) =>
           runtimeRef.current?.handleMouseMove(e.clientX, e.clientY)
         }
-        onContextMenu={(e) => {
-          e.preventDefault();
-          const shape = runtimeRef.current?.findShapeAtScreen(
-            e.clientX,
-            e.clientY,
-          );
-          if (!shape) {
-            setMenu(null);
-            return;
-          }
-          const selected = runtimeRef.current?.getSelectedIds() ?? [];
-          const ids = selected.includes(shape.id) ? selected : [shape.id];
-          if (!selected.includes(shape.id)) {
-            runtimeRef.current?.selectShape(shape.id);
-          }
-          const isLocked = runtimeRef.current?.areAllLocked(ids) ?? false;
-          setMenu({ x: e.clientX, y: e.clientY, ids, isLocked });
-        }}
+        onContextMenu={(e) => e.preventDefault()}
       />
       <canvas
         ref={overlayCanvasRef}
         className="absolute inset-0 pointer-events-none w-full h-full"
       />
 
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          onClose={() => setMenu(null)}
-          isLocked={menu.isLocked}
-          onBringToFront={() => runtimeRef.current?.bringToFront(menu.ids)}
-          onMoveForward={() => runtimeRef.current?.moveForward(menu.ids)}
-          onMoveBackward={() => runtimeRef.current?.moveBackward(menu.ids)}
-          onSendToBack={() => runtimeRef.current?.sendToBack(menu.ids)}
-          onToggleLock={() => runtimeRef.current?.toggleLock(menu.ids)}
-          onDelete={() => runtimeRef.current?.deleteShapes(menu.ids)}
+      {selection && toolbar?.visible && (
+        <SelectionToolbar
+          x={toolbar.x}
+          y={toolbar.y}
+          isLocked={selection.isLocked}
+          onBringToFront={() => runtimeRef.current?.bringToFront(selection.ids)}
+          onMoveForward={() => runtimeRef.current?.moveForward(selection.ids)}
+          onMoveBackward={() => runtimeRef.current?.moveBackward(selection.ids)}
+          onSendToBack={() => runtimeRef.current?.sendToBack(selection.ids)}
+          onToggleLock={() => runtimeRef.current?.toggleLock(selection.ids)}
+          onDelete={() => runtimeRef.current?.deleteShapes(selection.ids)}
         />
       )}
     </div>

@@ -185,6 +185,7 @@ export class BoardRuntime {
     onLocalShapePersisted?: (shape: _Shape) => void;
     onLocalLock?: (shapeId: string, action: LockAction) => void;
     onLocalShapeDeleted?: (shapeId: string) => void;
+    onSelectionChange?: (ids: string[]) => void;
   } = {};
 
   setSyncCallbacks(callbacks: {
@@ -192,6 +193,7 @@ export class BoardRuntime {
     onLocalShapePersisted?: (shape: _Shape) => void;
     onLocalLock?: (shapeId: string, action: LockAction) => void;
     onLocalShapeDeleted?: (shapeId: string) => void;
+    onSelectionChange?: (ids: string[]) => void;
   }) {
     this.syncCallbacks = callbacks;
 
@@ -297,6 +299,40 @@ export class BoardRuntime {
     return this.interactionManager.getSelectedIds();
   }
 
+  // Screen-space bounding box of the selection, used to anchor the toolbar.
+  getSelectionScreenRect(
+    ids: string[],
+  ): { x: number; y: number; w: number; h: number } | null {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const id of ids) {
+      const shape = this.entityManager.getById(id);
+      if (!shape) continue;
+      minX = Math.min(minX, shape.x);
+      minY = Math.min(minY, shape.y);
+      maxX = Math.max(maxX, shape.x + shape.width);
+      maxY = Math.max(maxY, shape.y + shape.height);
+    }
+    if (minX === Infinity) return null;
+
+    const topLeft = this.camera.worldToScreen(minX, minY);
+    const bottomRight = this.camera.worldToScreen(maxX, maxY);
+    return {
+      x: topLeft.x,
+      y: topLeft.y,
+      w: bottomRight.x - topLeft.x,
+      h: bottomRight.y - topLeft.y,
+    };
+  }
+
+  private notifySelection() {
+    this.syncCallbacks.onSelectionChange?.(
+      this.interactionManager.getSelectedIds(),
+    );
+  }
+
   areAllLocked(ids: string[]): boolean {
     if (ids.length === 0) return false;
     return ids.every((id) => this.entityManager.getById(id)?.locked === true);
@@ -314,6 +350,7 @@ export class BoardRuntime {
     changed.forEach((shape) =>
       this.syncCallbacks.onLocalShapePersisted?.(shape),
     );
+    this.notifySelection();
   }
 
   bringToFront(ids: string[]) {
@@ -356,6 +393,7 @@ export class BoardRuntime {
     this.interactionManager.selectById("");
     this.redrawAll();
     removed.forEach((id) => this.syncCallbacks.onLocalShapeDeleted?.(id));
+    this.notifySelection();
   }
 
   handleMouseDown(screenX: number, screenY: number) {
@@ -402,6 +440,8 @@ export class BoardRuntime {
         this.interactionManager.getSelectedIds(),
       );
     }
+
+    this.notifySelection();
   }
 
   handleMouseMove(screenX: number, screenY: number) {
@@ -494,6 +534,8 @@ export class BoardRuntime {
         this.interactionManager.getSelectedIds(),
       );
     }
+
+    this.notifySelection();
   }
 
   handlePanStart(screenX: number, screenY: number) {
