@@ -12,22 +12,31 @@ export class Overlay {
     const manipulationBounds =
       ResizeCalculator.getShapeManipulationBounds(shape);
     const locked = shape.locked === true;
+    // Use the raw bounds (no rounding): the ctx is already camera-transformed,
+    // so rounding here would snap in world units and misalign with the shape.
     const borderFigure = {
       ...shape,
       fill: null,
       strokeWidth: STROKE_WIDTH,
       stroke: locked ? LOCKED_BORDER_COLOR : BORDER_COLOR,
       radius: 0,
-      x: Math.ceil(manipulationBounds.x),
-      y: Math.ceil(manipulationBounds.y),
-      width: Math.ceil(manipulationBounds.w),
-      height: Math.ceil(manipulationBounds.h),
+      x: manipulationBounds.x,
+      y: manipulationBounds.y,
+      width: manipulationBounds.w,
+      height: manipulationBounds.h,
     };
 
     CanvasPainter.drawRectShape(ctx, borderFigure as unknown as Shape);
 
-    // Locked shapes are not resizable, so they show no handles.
-    if (locked) return;
+    // No handles on a locked shape, nor while it is being dragged (Miro shows
+    // just the outline during a move).
+    if (
+      locked ||
+      shape.state === "dragging" ||
+      shape.state === "remote-dragging"
+    ) {
+      return;
+    }
 
     const handlerRadius = Math.ceil(RESIZE_HANDLE_SIZE / zoom);
     const strokeWidth = Math.ceil(0.5 / zoom);
