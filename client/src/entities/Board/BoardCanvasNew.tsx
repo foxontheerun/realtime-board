@@ -7,10 +7,12 @@ import {
   useImperativeHandle,
 } from "react";
 import { type CameraController, BoardRuntime } from "../../canvas";
+import type { RemoteCursor } from "../../canvas/types";
 import { BoardSyncGateway } from "./model/BoardSyncGateway";
 import type { ShapeType, StickyColorId, Tool } from "../Shape";
 import type { EditingContextValue } from "./EditingContext";
 import { SelectionToolbar } from "../../features/shape-context-menu/ui/SelectionToolbar";
+import { RemoteCursorsLayer } from "../../features/presence/ui/RemoteCursorsLayer";
 
 export const MIN_ZOOM = 5;
 export const MAX_ZOOM = 400;
@@ -70,6 +72,8 @@ export const BoardCanvasNew = forwardRef<
     y: number;
     visible: boolean;
   } | null>(null);
+  const [cursors, setCursors] = useState<RemoteCursor[]>([]);
+  const [camera, setLocalCamera] = useState<CameraController | null>(null);
   const pointerDownRef = useRef(false);
 
   // Anchors the toolbar above the selection's current screen position.
@@ -125,6 +129,7 @@ export const BoardCanvasNew = forwardRef<
 
     runtimeRef.current.setClientId(clientIdRef.current);
     setCamera(runtimeRef.current.camera);
+    setLocalCamera(runtimeRef.current.camera);
     gatewayRef.current = new BoardSyncGateway(
       boardId,
       runtimeRef.current,
@@ -151,6 +156,12 @@ export const BoardCanvasNew = forwardRef<
             ? { ids, isLocked: runtimeRef.current?.areAllLocked(ids) ?? false }
             : null,
         );
+      },
+      onLocalCursor: (x, y) => {
+        gatewayRef.current?.sendCursor(x, y);
+      },
+      onRemoteCursors: (next) => {
+        setCursors(next);
       },
     });
 
@@ -273,6 +284,8 @@ export const BoardCanvasNew = forwardRef<
         ref={overlayCanvasRef}
         className="absolute inset-0 pointer-events-none w-full h-full"
       />
+
+      {camera && <RemoteCursorsLayer cursors={cursors} camera={camera} />}
 
       {selection && toolbar?.visible && (
         <SelectionToolbar

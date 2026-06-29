@@ -18,6 +18,8 @@ import { CoordinateTransformer } from "../utils/CoordinateTransformer";
 import { LockManager } from "../collab/LockManager";
 import type { LockAction } from "../collab/types";
 import { RESIZE_HANDLE_SIZE } from "../rendering/layers/mouseEventHandlingHelpers";
+import type { RemoteCursor } from "../types";
+import { PresenceManager } from "../collab/PresenceManager";
 
 export class BoardRuntime {
   public camera: CameraController;
@@ -33,10 +35,11 @@ export class BoardRuntime {
   private clientId: string | null = null;
   private lockSweepTimer?: ReturnType<typeof setInterval>;
 
+  private presenceManager = new PresenceManager();
+
   private unsubscribeCamera?: () => void;
   private activeStickyColor: StickyColorId = "yellow";
 
-  // Color used for non-sticky shapes (RECT, ELLIPSE).
   private activeShapeColor: { fill: string; stroke: string } = {
     fill: "#DBEAFE",
     stroke: "#93C5FD",
@@ -151,14 +154,19 @@ export class BoardRuntime {
     }
   }
 
-  // Keepalive piggybacked on the transient stream: an incoming move from a
-  // client refreshes that client's lock on the shape.
   renewRemoteLock(shapeId: string, clientId: string) {
     this.lockManager.acquire(shapeId, clientId, Date.now());
   }
 
-  // Recover shapes left in remote-dragging by a client that vanished without
-  // releasing (e.g. closed its tab): once its lease lapses, return them to static.
+  applyRemoteCursor(clientId: string, x: number, y: number) {
+    this.presenceManager.setCursor(clientId, x, y, Date.now());
+    this.emitRemoteCursors();
+  }
+
+  private emitRemoteCursors() {
+    this.syncCallbacks.onRemoteCursors?.(this.presenceManager.getCursors());
+  }
+
   private sweepStaleLocks() {
     const now = Date.now();
     this.lockManager.sweepExpired(now);
@@ -178,6 +186,8 @@ export class BoardRuntime {
       this.renderManager.drawStatic(this.camera, this.entityManager);
       this.renderManager.drawDrag(this.camera, this.entityManager);
     }
+
+    if (this.presenceManager.sweepExpired(now)) this.emitRemoteCursors();
   }
 
   private syncCallbacks: {
@@ -186,6 +196,8 @@ export class BoardRuntime {
     onLocalLock?: (shapeId: string, action: LockAction) => void;
     onLocalShapeDeleted?: (shapeId: string) => void;
     onSelectionChange?: (ids: string[]) => void;
+    onLocalCursor?: (x: number, y: number) => void;
+    onRemoteCursors?: (cursors: RemoteCursor[]) => void;
   } = {};
 
   setSyncCallbacks(callbacks: {
@@ -194,6 +206,8 @@ export class BoardRuntime {
     onLocalLock?: (shapeId: string, action: LockAction) => void;
     onLocalShapeDeleted?: (shapeId: string) => void;
     onSelectionChange?: (ids: string[]) => void;
+    onLocalCursor?: (x: number, y: number) => void;
+    onRemoteCursors?: (cursors: RemoteCursor[]) => void;
   }) {
     this.syncCallbacks = callbacks;
 
@@ -445,6 +459,12 @@ export class BoardRuntime {
   }
 
   handleMouseMove(screenX: number, screenY: number) {
+    const cursorWorld = this.coordinateTransformer.screenToWorld(
+      screenX,
+      screenY,
+    );
+    this.syncCallbacks.onLocalCursor?.(cursorWorld.x, cursorWorld.y);
+
     if (this.creationTool.startPoint) {
       const worldPoint = this.coordinateTransformer.screenToWorld(
         screenX,
