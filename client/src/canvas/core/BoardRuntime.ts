@@ -366,12 +366,16 @@ export class BoardRuntime {
       return;
     }
 
-    const hit = this.entityManager.findShapeAt(worldPoint, RESIZE_HANDLE_SIZE);
+    const scale = this.camera.getScale();
+    const hit = this.entityManager.findShapeAt(
+      worldPoint,
+      RESIZE_HANDLE_SIZE / scale,
+    );
     if (hit && this.collab.isLockedByOther(hit.id)) {
       return;
     }
 
-    this.interactionManager.handleMouseDown(worldPoint, canvasPoint);
+    this.interactionManager.handleMouseDown(worldPoint, canvasPoint, scale);
 
     const interaction = this.interactionManager.getInteraction();
 

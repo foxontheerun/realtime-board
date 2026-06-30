@@ -299,7 +299,10 @@ export class EntityManager {
   getShapesOnDragLayer(): _Shape[] {
     const shapes = this.getShapes();
     const moving = shapes.filter(
-      (s) => s.state === "dragging" || s.state === "remote-dragging",
+      (s) =>
+        s.state === "dragging" ||
+        s.state === "remote-dragging" ||
+        s.state === "resizing",
     );
     if (moving.length === 0) return [];
 

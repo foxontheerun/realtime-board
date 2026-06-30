@@ -107,7 +107,9 @@ export class RenderManager {
 
   drawDrag(camera: CameraController, entityManager: EntityManager) {
     const dragging = entityManager.getShapesOnDragLayer();
-    const movingShapes = dragging.filter((s) => s.state === "dragging");
+    const movingShapes = dragging.filter(
+      (s) => s.state === "dragging" || s.state === "resizing",
+    );
 
     let dirtyRect: Rect | null = null;
 

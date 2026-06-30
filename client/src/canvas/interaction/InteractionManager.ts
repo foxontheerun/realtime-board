@@ -51,10 +51,10 @@ export class InteractionManager {
     return this.interaction.selectedIds;
   }
 
-  handleMouseDown(worldPoint: Point, canvasPoint: Point) {
+  handleMouseDown(worldPoint: Point, canvasPoint: Point, scale: number) {
     const shape = this.entityManager.findShapeAt(
       worldPoint,
-      RESIZE_HANDLE_SIZE,
+      RESIZE_HANDLE_SIZE / scale,
     );
 
     if (!shape) {
@@ -87,7 +87,7 @@ export class InteractionManager {
     // Resize handles only exist on an already-selected shape.
     if (isSelected) {
       const bound = ResizeCalculator.getShapeManipulationBounds(shape);
-      const handle = hitTestResizeHandle(bound, worldPoint);
+      const handle = hitTestResizeHandle(bound, worldPoint, scale);
       if (handle) {
         this.resizeController.begin(shape, handle, worldPoint);
         this.interaction = {

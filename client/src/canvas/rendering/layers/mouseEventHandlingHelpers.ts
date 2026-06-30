@@ -5,14 +5,16 @@ import {
 } from "../../entities";
 
 export const RESIZE_HANDLE_SIZE = 6;
+export const RESIZE_HANDLE_HIT_SLOP = 4;
 
 export const hitTestResizeHandle = (
   bounds: ManipulationBounds,
   point: { x: number; y: number },
+  scale: number,
 ): ResizeHandle | null => {
   const { x, y, w, h } = bounds;
   const { x: px, y: py } = point;
-  const delta = RESIZE_HANDLE_SIZE;
+  const delta = (RESIZE_HANDLE_SIZE + RESIZE_HANDLE_HIT_SLOP) / scale;
 
   const regions: [ResizeHandle, number, number, number, number][] = [
     [ResizeHandles.Top, x + delta, y - delta, w - delta * 2, delta * 2],
