@@ -1,4 +1,4 @@
-# Realtime Board
+# Koi Board
 
 ![photo_2026-03-20_02-57-40](https://github.com/user-attachments/assets/4ad7a45a-50c8-4812-90b6-824cf654e945)
 
