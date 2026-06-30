@@ -4,10 +4,15 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: "Nunito", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   background-color: #111827;
   color: #e5e7eb;
+}
+
+/* Koi logo wordmark */
+.font-logo {
+  font-family: "Fredoka", system-ui, sans-serif;
 }
 
 #root {
@@ -71,6 +76,16 @@ body {
 
 :root {
   --radius: 0.625rem;
+
+  /* Koi brand */
+  --koi-orange: #ff6a3d;
+  --koi-orange-hover: #e85427;
+  --koi-orange-tint: #ffe3d6;
+  --pond-aqua: #16b8d4;
+  --pond-aqua-deep: #0e7c99;
+  --pond-aqua-tint: #e3f6fb;
+  --reed-mint: #34d399;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
