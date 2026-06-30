@@ -273,7 +273,7 @@ export const BoardCanvasNew = forwardRef<
             runtimeRef.current?.handlePanStart(e.clientX, e.clientY);
             return;
           }
-          runtimeRef.current?.handleMouseDown(e.clientX, e.clientY);
+          runtimeRef.current?.handleMouseDown(e.clientX, e.clientY, e.shiftKey);
         }}
         onMouseMove={(e) =>
           runtimeRef.current?.handleMouseMove(e.clientX, e.clientY)

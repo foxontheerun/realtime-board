@@ -24,7 +24,7 @@ export class PointerController {
     private readonly callbacks: PointerCallbacks,
   ) {}
 
-  handleMouseDown(screenX: number, screenY: number) {
+  handleMouseDown(screenX: number, screenY: number, shiftKey: boolean) {
     const worldPoint = this.coordinateTransformer.screenToWorld(
       screenX,
       screenY,
@@ -48,7 +48,12 @@ export class PointerController {
       return;
     }
 
-    this.interactionManager.handleMouseDown(worldPoint, canvasPoint, scale);
+    this.interactionManager.handleMouseDown(
+      worldPoint,
+      canvasPoint,
+      scale,
+      shiftKey,
+    );
 
     const interaction = this.interactionManager.getInteraction();
 

@@ -24,6 +24,7 @@ export class InteractionManager {
   private transientDrag = false;
   private dragMoved = false;
   private dragStart: Point | null = null;
+  private selectAdditive = false;
 
   constructor(
     private entityManager: EntityManager,
@@ -51,13 +52,20 @@ export class InteractionManager {
     return this.interaction.selectedIds;
   }
 
-  handleMouseDown(worldPoint: Point, canvasPoint: Point, scale: number) {
+  handleMouseDown(
+    worldPoint: Point,
+    canvasPoint: Point,
+    scale: number,
+    shiftKey: boolean,
+  ) {
     const shape = this.entityManager.findShapeAt(
       worldPoint,
       RESIZE_HANDLE_SIZE / scale,
     );
 
     if (!shape) {
+      this.selectAdditive = shiftKey;
+      if (!shiftKey) this.entityManager.clearSelection();
       this.interaction = {
         type: "select",
         startX: canvasPoint.x,
@@ -68,9 +76,8 @@ export class InteractionManager {
         startWorldY: worldPoint.y,
         currentWorldX: worldPoint.x,
         currentWorldY: worldPoint.y,
-        selectedIds: [],
+        selectedIds: shiftKey ? this.getSelectedIds() : [],
       };
-      this.entityManager.clearSelection();
       return;
     }
 
@@ -83,6 +90,23 @@ export class InteractionManager {
 
     const selectedIds = this.getSelectedIds();
     const isSelected = selectedIds.includes(shape.id);
+
+    if (shiftKey) {
+      if (isSelected) {
+        shape.state = "static";
+        this.interaction = {
+          type: "idle",
+          selectedIds: selectedIds.filter((id) => id !== shape.id),
+        };
+      } else {
+        shape.state = "selected";
+        this.interaction = {
+          type: "idle",
+          selectedIds: [...selectedIds, shape.id],
+        };
+      }
+      return;
+    }
 
     // Resize handles only exist on an already-selected shape.
     if (isSelected) {
@@ -183,17 +207,29 @@ export class InteractionManager {
     }
 
     if (this.interaction.type === "select") {
-      const shapes = this.entityManager.findShapesInRect({
+      const found = this.entityManager.findShapesInRect({
         x: this.interaction.startWorldX,
         y: this.interaction.startWorldY,
         width: this.interaction.currentWorldX - this.interaction.startWorldX,
         height: this.interaction.currentWorldY - this.interaction.startWorldY,
       });
-      this.selectShapes(shapes);
-      this.interaction = {
-        type: "idle",
-        selectedIds: shapes.map((shape) => shape.id),
-      };
+
+      if (this.selectAdditive) {
+        const merged = [...this.interaction.selectedIds];
+        found.forEach((shape) => {
+          if (!merged.includes(shape.id)) merged.push(shape.id);
+        });
+        this.selectShapes(found, true);
+        this.interaction = { type: "idle", selectedIds: merged };
+      } else {
+        this.selectShapes(found);
+        this.interaction = {
+          type: "idle",
+          selectedIds: found.map((shape) => shape.id),
+        };
+      }
+
+      this.selectAdditive = false;
       return;
     }
 
@@ -264,8 +300,8 @@ export class InteractionManager {
     this.interaction = { type: "idle", selectedIds: shape ? [id] : [] };
   }
 
-  private selectShapes(shapes: _Shape[]) {
-    this.entityManager.clearSelection();
+  private selectShapes(shapes: _Shape[], additive = false) {
+    if (!additive) this.entityManager.clearSelection();
     shapes.forEach((shape) => {
       shape.state = "selected";
     });
