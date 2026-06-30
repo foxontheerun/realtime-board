@@ -41,19 +41,21 @@ export function RemoteCursorsLayer({
 }
 
 function CursorArrow({ color }: { color: string }) {
+  // Tip is at (0,0) so `translate(x, y)` puts it exactly on the pointer spot,
+  // like a native cursor. overflow: visible keeps the white outline at the tip.
   return (
     <svg
-      width="22"
-      height="22"
-      viewBox="0 0 20 20"
+      width="15"
+      height="24"
+      viewBox="0 0 12 19"
       fill="none"
-      style={{ display: "block" }}
+      style={{ display: "block", overflow: "visible" }}
     >
       <path
-        d="M3 2 L3 16 L7 12.5 L10 18 L12.5 17 L9.5 11.5 L15 11 Z"
+        d="M0 0 L0 16 L3.5 12.7 L6 18 L8.2 17 L5.7 11.9 L10 11.9 Z"
         fill={color}
-        stroke="white"
-        strokeWidth="1.2"
+        stroke="black"
+        strokeWidth="1"
         strokeLinejoin="round"
       />
     </svg>
