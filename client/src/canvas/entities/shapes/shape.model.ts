@@ -11,7 +11,7 @@ export interface _Shape {
   strokeWidth?: string;
   radius?: number;
   type?: ShapeType;
-  state: "static" | "dragging" | "selected" | "remote-dragging";
+  state: "static" | "dragging" | "selected" | "remote-dragging" | "resizing";
   zIndex?: number;
   text?: string;
   locked?: boolean;

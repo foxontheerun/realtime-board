@@ -5,7 +5,12 @@ import { CanvasPainter } from "../../utils";
 export class StaticLayer {
   draw(ctx: CanvasRenderingContext2D, shapes: _Shape[]) {
     shapes.forEach((s) => {
-      if (s.state === "dragging" || s.state === "remote-dragging") return;
+      if (
+        s.state === "dragging" ||
+        s.state === "remote-dragging" ||
+        s.state === "resizing"
+      )
+        return;
       switch (s.type) {
         case "STICKER":
           CanvasPainter.drawSticker(ctx, s as unknown as Shape);

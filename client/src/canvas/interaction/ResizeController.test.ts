@@ -16,13 +16,13 @@ const shape = (over: Partial<_Shape> & { id: string }): _Shape => ({
 });
 
 describe("ResizeController", () => {
-  it("sets the shape to dragging on begin", () => {
+  it("sets the shape to resizing on begin", () => {
     const s = shape({ id: "a" });
     const rc = new ResizeController();
 
     rc.begin(s, ResizeHandles.Right, { x: 0, y: 0 });
 
-    expect(s.state).toBe("dragging");
+    expect(s.state).toBe("resizing");
   });
 
   it("resizes by the pointer delta", () => {

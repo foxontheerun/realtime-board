@@ -24,9 +24,7 @@ export class ResizeController {
     this.last = { ...shape };
     this.liveShape = shape;
 
-    // Переводим фигуру в dragging — она уйдёт на dragCanvas
-    // и будет перерисовываться каждый кадр как при drag.
-    shape.state = "dragging";
+    shape.state = "resizing";
   }
 
   update(pointer: { x: number; y: number }): _Shape | null {
@@ -41,7 +39,7 @@ export class ResizeController {
       y: dy,
     });
 
-    this.last = { ...next, id: this.shapeId, state: "dragging" };
+    this.last = { ...next, id: this.shapeId, state: "resizing" };
 
     // Обновляем живой объект чтобы dragCanvas видел актуальную геометрию.
     if (this.liveShape) {
