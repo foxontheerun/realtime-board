@@ -45,8 +45,8 @@ function CursorArrow({ color }: { color: string }) {
   // like a native cursor. overflow: visible keeps the white outline at the tip.
   return (
     <svg
-      width="15"
-      height="24"
+      width="12"
+      height="19"
       viewBox="0 0 12 19"
       fill="none"
       style={{ display: "block", overflow: "visible" }}
