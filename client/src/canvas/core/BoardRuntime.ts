@@ -1,8 +1,4 @@
-import {
-  STICKY_PRESETS,
-  type ShapeType,
-  type StickyColorId,
-} from "../../entities/Shape";
+import type { ShapeType, StickyColorId } from "../../entities/Shape";
 import { CameraController } from "../camera";
 import { EntityManager, type _Shape } from "../entities";
 import type {
@@ -16,10 +12,12 @@ import { InteractionManager } from "../interaction/InteractionManager";
 import { RenderManager } from "../rendering/RenderManager";
 import { CoordinateTransformer } from "../utils/CoordinateTransformer";
 import type { LockAction } from "../collab/types";
-import { RESIZE_HANDLE_SIZE } from "../rendering/layers/mouseEventHandlingHelpers";
 import type { RemoteCursor } from "../types";
 import { RenderOrchestrator } from "../rendering/RenderOrchestrator";
 import { CollabController } from "../collab/CollabController";
+import { ShapeCreationController } from "../interaction/ShapeCreationController";
+import { ShapeCommands } from "./ShapeCommands";
+import { PointerController } from "../interaction/PointerController";
 
 export class BoardRuntime {
   public camera: CameraController;
@@ -32,28 +30,14 @@ export class BoardRuntime {
   public entityManager: EntityManager;
   private dragController: DragController;
   private resizeController: ResizeController;
-
+  private creation: ShapeCreationController;
   private collab: CollabController;
 
   private lockSweepTimer?: ReturnType<typeof setInterval>;
+  private shapeCommands: ShapeCommands;
+  private pointer: PointerController;
 
   private unsubscribeCamera?: () => void;
-  private activeStickyColor: StickyColorId = "yellow";
-
-  private activeShapeColor: { fill: string; stroke: string } = {
-    fill: "#DBEAFE",
-    stroke: "#93C5FD",
-  };
-
-  private creationTool: {
-    type: ShapeType | null;
-    startPoint: { x: number; y: number } | null;
-    previewShape: _Shape | null;
-  } = {
-    type: null,
-    startPoint: null,
-    previewShape: null,
-  };
 
   constructor(
     gridCanvas: HTMLCanvasElement,
@@ -98,6 +82,37 @@ export class BoardRuntime {
       () => this.interactionManager.getSelectedIds(),
     );
 
+    this.shapeCommands = new ShapeCommands(
+      this.entityManager,
+      this.renderOrchestrator,
+      this.interactionManager,
+      {
+        onPersist: (shape) => this.syncCallbacks.onLocalShapePersisted?.(shape),
+        onDelete: (id) => this.syncCallbacks.onLocalShapeDeleted?.(id),
+        onSelectionChange: (ids) => this.syncCallbacks.onSelectionChange?.(ids),
+      },
+    );
+
+    this.creation = new ShapeCreationController(
+      this.entityManager,
+      this.renderOrchestrator,
+      (shape) => this.syncCallbacks.onLocalShapePersisted?.(shape),
+    );
+
+    this.pointer = new PointerController(
+      this.coordinateTransformer,
+      this.interactionManager,
+      this.camera,
+      this.entityManager,
+      this.collab,
+      this.creation,
+      this.renderOrchestrator,
+      {
+        onLocalCursor: (x, y) => this.syncCallbacks.onLocalCursor?.(x, y),
+        onSelectionChange: (ids) => this.syncCallbacks.onSelectionChange?.(ids),
+      },
+    );
+
     const container = overlayCanvas.parentElement;
     if (container) {
       this.interactionManager.setContainer(container);
@@ -121,17 +136,15 @@ export class BoardRuntime {
   }
 
   setCreationTool(type: ShapeType | null) {
-    this.creationTool.type = type;
-    this.creationTool.startPoint = null;
-    this.creationTool.previewShape = null;
+    this.creation.setTool(type);
   }
 
   setActiveStickyColor(colorId: StickyColorId) {
-    this.activeStickyColor = colorId;
+    this.creation.setStickyColor(colorId);
   }
 
   setActiveShapeColor(fill: string, stroke: string) {
-    this.activeShapeColor = { fill, stroke };
+    this.creation.setShapeColor(fill, stroke);
   }
 
   setClientId(clientId: string) {
@@ -248,12 +261,7 @@ export class BoardRuntime {
   }
 
   updateShapeText(id: string, text: string) {
-    const shape = this.entityManager.getById(id);
-    if (!shape) return;
-
-    shape.text = text;
-    this.renderOrchestrator.staticLayer();
-    this.syncCallbacks.onLocalShapePersisted?.(shape);
+    this.shapeCommands.updateShapeText(id, text);
   }
 
   getSelectedIds(): string[] {
@@ -287,53 +295,28 @@ export class BoardRuntime {
     };
   }
 
-  private notifySelection() {
-    this.syncCallbacks.onSelectionChange?.(
-      this.interactionManager.getSelectedIds(),
-    );
-  }
-
   areAllLocked(ids: string[]): boolean {
-    if (ids.length === 0) return false;
-    return ids.every((id) => this.entityManager.getById(id)?.locked === true);
-  }
-
-  private unlockedIds(ids: string[]): string[] {
-    return ids.filter((id) => this.entityManager.getById(id)?.locked !== true);
+    return this.shapeCommands.areAllLocked(ids);
   }
 
   toggleLock(ids: string[]) {
-    const changed = this.entityManager.setLocked(ids, !this.areAllLocked(ids));
-    if (changed.length === 0) return;
-    this.redrawAll();
-    changed.forEach((shape) =>
-      this.syncCallbacks.onLocalShapePersisted?.(shape),
-    );
-    this.notifySelection();
+    this.shapeCommands.toggleLock(ids);
   }
 
   bringToFront(ids: string[]) {
-    this.applyZOrder(this.entityManager.bringToFront(this.unlockedIds(ids)));
+    this.shapeCommands.bringToFront(ids);
   }
 
   sendToBack(ids: string[]) {
-    this.applyZOrder(this.entityManager.sendToBack(this.unlockedIds(ids)));
+    this.shapeCommands.sendToBack(ids);
   }
 
   moveForward(ids: string[]) {
-    this.applyZOrder(this.entityManager.moveForward(this.unlockedIds(ids)));
+    this.shapeCommands.moveForward(ids);
   }
 
   moveBackward(ids: string[]) {
-    this.applyZOrder(this.entityManager.moveBackward(this.unlockedIds(ids)));
-  }
-
-  private applyZOrder(changed: _Shape[]) {
-    if (changed.length === 0) return;
-    this.redrawAll();
-    changed.forEach((shape) =>
-      this.syncCallbacks.onLocalShapePersisted?.(shape),
-    );
+    this.shapeCommands.moveBackward(ids);
   }
 
   selectShape(id: string) {
@@ -343,207 +326,23 @@ export class BoardRuntime {
   }
 
   deleteShapes(ids: string[]) {
-    const removed = this.entityManager.removeShapes(this.unlockedIds(ids));
-    if (removed.length === 0) return;
-    this.interactionManager.selectById("");
-    this.redrawAll();
-    removed.forEach((id) => this.syncCallbacks.onLocalShapeDeleted?.(id));
-    this.notifySelection();
+    this.shapeCommands.deleteShapes(ids);
   }
 
   handleMouseDown(screenX: number, screenY: number) {
-    const worldPoint = this.coordinateTransformer.screenToWorld(
-      screenX,
-      screenY,
-    );
-    const canvasPoint = this.coordinateTransformer.screenToCanvas(
-      screenX,
-      screenY,
-    );
-
-    if (this.creationTool.type) {
-      this.startCreatingShape(worldPoint);
-      return;
-    }
-
-    const scale = this.camera.getScale();
-    const hit = this.entityManager.findShapeAt(
-      worldPoint,
-      RESIZE_HANDLE_SIZE / scale,
-    );
-    if (hit && this.collab.isLockedByOther(hit.id)) {
-      return;
-    }
-
-    this.interactionManager.handleMouseDown(worldPoint, canvasPoint, scale);
-
-    const interaction = this.interactionManager.getInteraction();
-
-    if (interaction.type === "drag" || interaction.type === "resize") {
-      this.collab.acquire(this.interactionManager.getSelectedIds());
-      this.renderOrchestrator.staticLayer();
-      this.renderOrchestrator.dragLayer();
-      this.renderOrchestrator.overlay();
-    } else {
-      this.renderOrchestrator.overlay();
-    }
-
-    this.notifySelection();
+    this.pointer.handleMouseDown(screenX, screenY);
   }
 
   handleMouseMove(screenX: number, screenY: number) {
-    const cursorWorld = this.coordinateTransformer.screenToWorld(
-      screenX,
-      screenY,
-    );
-    this.syncCallbacks.onLocalCursor?.(cursorWorld.x, cursorWorld.y);
-
-    if (this.creationTool.startPoint) {
-      const worldPoint = this.coordinateTransformer.screenToWorld(
-        screenX,
-        screenY,
-      );
-      this.updateShapePreview(worldPoint);
-      return;
-    }
-
-    const isPanning = this.interactionManager.handlePanMove(
-      screenX,
-      screenY,
-      this.camera,
-    );
-
-    if (isPanning) return;
-
-    const worldPoint = this.coordinateTransformer.screenToWorld(
-      screenX,
-      screenY,
-    );
-    const canvasPoint = this.coordinateTransformer.screenToCanvas(
-      screenX,
-      screenY,
-    );
-
-    this.interactionManager.handleMouseMove(worldPoint, canvasPoint);
-
-    const interaction = this.interactionManager.getInteraction();
-
-    if (interaction.type === "pan" || interaction.type === "idle") return;
-
-    if (interaction.type === "drag" || interaction.type === "resize") {
-      this.collab.renew(this.interactionManager.getSelectedIds());
-      this.renderOrchestrator.dragLayer();
-      this.renderOrchestrator.overlay();
-      return;
-    }
-
-    const selectionBox =
-      interaction.type === "select"
-        ? {
-            startX: interaction.startX,
-            startY: interaction.startY,
-            currentX: interaction.currentX,
-            currentY: interaction.currentY,
-          }
-        : undefined;
-
-    this.renderOrchestrator.overlay(selectionBox);
+    this.pointer.handleMouseMove(screenX, screenY);
   }
 
   handleMouseUp() {
-    if (this.creationTool.startPoint && this.creationTool.previewShape) {
-      this.finishCreatingShape();
-      return;
-    }
-
-    const interactionBefore = this.interactionManager.getInteraction();
-    const wasDragOrResize =
-      interactionBefore.type === "drag" || interactionBefore.type === "resize";
-
-    this.interactionManager.handleMouseUp();
-
-    if (wasDragOrResize) {
-      this.collab.release(interactionBefore.selectedIds);
-      this.renderOrchestrator.staticLayer();
-      this.renderOrchestrator.dragLayer();
-      this.renderOrchestrator.overlay();
-    } else {
-      this.renderOrchestrator.overlay();
-    }
-
-    this.notifySelection();
+    this.pointer.handleMouseUp();
   }
 
   handlePanStart(screenX: number, screenY: number) {
-    this.interactionManager.handlePanStart(screenX, screenY);
-  }
-
-  private updateShapePreview(worldPoint: { x: number; y: number }) {
-    if (!this.creationTool.startPoint || !this.creationTool.previewShape)
-      return;
-
-    const start = this.creationTool.startPoint;
-    const width = worldPoint.x - start.x;
-    const height = worldPoint.y - start.y;
-
-    this.creationTool.previewShape = {
-      ...this.creationTool.previewShape,
-      width: Math.abs(width),
-      height: Math.abs(height),
-      x: width < 0 ? worldPoint.x : start.x,
-      y: height < 0 ? worldPoint.y : start.y,
-    };
-
-    this.renderManager.drawOverlay(
-      this.camera,
-      this.entityManager,
-      null,
-      undefined,
-      this.creationTool.previewShape,
-    );
-  }
-
-  private finishCreatingShape() {
-    if (!this.creationTool.previewShape) return;
-
-    const shape = this.creationTool.previewShape;
-
-    if (shape.width < 10 || shape.height < 10) {
-      shape.width = Math.max(shape.width, 100);
-      shape.height = Math.max(shape.height, 100);
-    }
-
-    this.entityManager.addShape(shape);
-    this.syncCallbacks.onLocalShapePersisted?.(shape);
-
-    this.creationTool.startPoint = null;
-    this.creationTool.previewShape = null;
-    this.creationTool.type = null;
-
-    this.redrawAll();
-  }
-
-  private startCreatingShape(worldPoint: { x: number; y: number }) {
-    this.creationTool.startPoint = worldPoint;
-
-    const isSticky = this.creationTool.type === "STICKER";
-    const color = isSticky
-      ? STICKY_PRESETS[this.activeStickyColor]
-      : this.activeShapeColor;
-
-    this.creationTool.previewShape = {
-      id: crypto.randomUUID(),
-      type: this.creationTool.type!,
-      x: worldPoint.x,
-      y: worldPoint.y,
-      width: 0,
-      height: 0,
-      fill: color.fill,
-      stroke: color.stroke,
-      state: "static",
-      radius: this.creationTool.type === "RECT" ? 8 : 0,
-      zIndex: this.entityManager.getMaxZIndex() + 1,
-    };
+    this.pointer.handlePanStart(screenX, screenY);
   }
 
   private redrawAll() {
