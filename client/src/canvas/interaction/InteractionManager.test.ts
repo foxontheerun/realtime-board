@@ -35,7 +35,7 @@ describe("InteractionManager — resize handle priority", () => {
     const { im } = setup([a, b]);
 
     im.selectById("a");
-    im.handleMouseDown({ x: 0, y: 0 }, { x: 0, y: 0 }, 1);
+    im.handleMouseDown({ x: 0, y: 0 }, { x: 0, y: 0 }, 1, false);
 
     const interaction = im.getInteraction();
     expect(interaction.type).toBe("resize");
@@ -48,7 +48,7 @@ describe("InteractionManager — resize handle priority", () => {
     const a = shape({ id: "a", x: 0, y: 0, width: 100, height: 100 });
     const { im } = setup([a]);
 
-    im.handleMouseDown({ x: 0, y: 0 }, { x: 0, y: 0 }, 1);
+    im.handleMouseDown({ x: 0, y: 0 }, { x: 0, y: 0 }, 1, false);
 
     expect(im.getInteraction().type).not.toBe("resize");
   });

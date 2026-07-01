@@ -2,6 +2,7 @@ import type { EntityManager } from "../entities/EntityManager";
 import type { DragController } from "./DragController";
 import type { ResizeController } from "./ResizeController";
 import { ResizeCalculator } from "./ResizeCalculator";
+import { GroupResizeController } from "./GroupResizeController";
 import {
   hitTestResizeHandle,
   RESIZE_HANDLE_SIZE,
@@ -24,6 +25,8 @@ export class InteractionManager {
   private transientDrag = false;
   private dragMoved = false;
   private dragStart: Point | null = null;
+  private selectAdditive = false;
+  private groupResize = new GroupResizeController();
 
   constructor(
     private entityManager: EntityManager,
@@ -51,16 +54,38 @@ export class InteractionManager {
     return this.interaction.selectedIds;
   }
 
-  handleMouseDown(worldPoint: Point, canvasPoint: Point, scale: number) {
-    const grabbed = this.findSelectedResizeHandle(worldPoint, scale);
-    if (grabbed) {
-      this.resizeController.begin(grabbed.shape, grabbed.handle, worldPoint);
-      this.interaction = {
-        type: "resize",
-        selectedIds: [grabbed.shape.id],
-        activeId: grabbed.shape.id,
-      };
-      return;
+  handleMouseDown(
+    worldPoint: Point,
+    canvasPoint: Point,
+    scale: number,
+    shiftKey: boolean,
+  ) {
+    const selectedIds = this.getSelectedIds();
+
+    if (!shiftKey && selectedIds.length > 1) {
+      const groupShapes = this.entityManager
+        .getShapes()
+        .filter((s) => selectedIds.includes(s.id) && !s.locked);
+      const groupBounds = ResizeCalculator.getGroupBounds(groupShapes);
+      const handle = hitTestResizeHandle(groupBounds, worldPoint, scale);
+      if (handle) {
+        this.groupResize.begin(groupShapes, handle, worldPoint);
+        this.interaction = { type: "group-resize", selectedIds };
+        return;
+      }
+    }
+
+    if (!shiftKey) {
+      const grabbed = this.findSelectedResizeHandle(worldPoint, scale);
+      if (grabbed) {
+        this.resizeController.begin(grabbed.shape, grabbed.handle, worldPoint);
+        this.interaction = {
+          type: "resize",
+          selectedIds: [grabbed.shape.id],
+          activeId: grabbed.shape.id,
+        };
+        return;
+      }
     }
 
     const shape = this.entityManager.findShapeAt(
@@ -69,6 +94,8 @@ export class InteractionManager {
     );
 
     if (!shape) {
+      this.selectAdditive = shiftKey;
+      if (!shiftKey) this.entityManager.clearSelection();
       this.interaction = {
         type: "select",
         startX: canvasPoint.x,
@@ -79,9 +106,8 @@ export class InteractionManager {
         startWorldY: worldPoint.y,
         currentWorldX: worldPoint.x,
         currentWorldY: worldPoint.y,
-        selectedIds: [],
+        selectedIds: shiftKey ? this.getSelectedIds() : [],
       };
-      this.entityManager.clearSelection();
       return;
     }
 
@@ -92,8 +118,24 @@ export class InteractionManager {
       return;
     }
 
-    const selectedIds = this.getSelectedIds();
     const isSelected = selectedIds.includes(shape.id);
+
+    if (shiftKey) {
+      if (isSelected) {
+        shape.state = "static";
+        this.interaction = {
+          type: "idle",
+          selectedIds: selectedIds.filter((id) => id !== shape.id),
+        };
+      } else {
+        shape.state = "selected";
+        this.interaction = {
+          type: "idle",
+          selectedIds: [...selectedIds, shape.id],
+        };
+      }
+      return;
+    }
 
     this.dragStart = canvasPoint;
     this.dragMoved = false;
@@ -177,6 +219,15 @@ export class InteractionManager {
       }
       return;
     }
+
+    if (this.interaction.type === "group-resize") {
+      const updated = this.groupResize.update(worldPoint);
+      updated.forEach((shape) => {
+        this.entityManager.updateShapeList(shape);
+        this.onTransientUpdateCallback?.(shape);
+      });
+      return;
+    }
   }
 
   handleMouseUp() {
@@ -193,17 +244,29 @@ export class InteractionManager {
     }
 
     if (this.interaction.type === "select") {
-      const shapes = this.entityManager.findShapesInRect({
+      const found = this.entityManager.findShapesInRect({
         x: this.interaction.startWorldX,
         y: this.interaction.startWorldY,
         width: this.interaction.currentWorldX - this.interaction.startWorldX,
         height: this.interaction.currentWorldY - this.interaction.startWorldY,
       });
-      this.selectShapes(shapes);
-      this.interaction = {
-        type: "idle",
-        selectedIds: shapes.map((shape) => shape.id),
-      };
+
+      if (this.selectAdditive) {
+        const merged = [...this.interaction.selectedIds];
+        found.forEach((shape) => {
+          if (!merged.includes(shape.id)) merged.push(shape.id);
+        });
+        this.selectShapes(found, true);
+        this.interaction = { type: "idle", selectedIds: merged };
+      } else {
+        this.selectShapes(found);
+        this.interaction = {
+          type: "idle",
+          selectedIds: found.map((shape) => shape.id),
+        };
+      }
+
+      this.selectAdditive = false;
       return;
     }
 
@@ -237,6 +300,14 @@ export class InteractionManager {
         this.entityManager.updateShapeList(finalShape);
         this.onFinalUpdateCallback?.(finalShape);
       }
+    }
+
+    if (this.interaction.type === "group-resize") {
+      const finalShapes = this.groupResize.end();
+      finalShapes.forEach((shape) => {
+        this.entityManager.updateShapeList(shape);
+        this.onFinalUpdateCallback?.(shape);
+      });
     }
 
     this.interaction = { type: "idle", selectedIds };
@@ -274,8 +345,8 @@ export class InteractionManager {
     this.interaction = { type: "idle", selectedIds: shape ? [id] : [] };
   }
 
-  private selectShapes(shapes: _Shape[]) {
-    this.entityManager.clearSelection();
+  private selectShapes(shapes: _Shape[], additive = false) {
+    if (!additive) this.entityManager.clearSelection();
     shapes.forEach((shape) => {
       shape.state = "selected";
     });

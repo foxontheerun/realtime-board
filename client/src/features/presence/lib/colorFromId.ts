@@ -7,5 +7,5 @@ export function colorFromId(id: string): string {
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) % 360;
   }
-  return `hsl(${hash}, 70%, 45%)`;
+  return `hsl(${hash}, 65%, 78%)`;
 }

@@ -329,8 +329,8 @@ export class BoardRuntime {
     this.shapeCommands.deleteShapes(ids);
   }
 
-  handleMouseDown(screenX: number, screenY: number) {
-    this.pointer.handleMouseDown(screenX, screenY);
+  handleMouseDown(screenX: number, screenY: number, shiftKey: boolean) {
+    this.pointer.handleMouseDown(screenX, screenY, shiftKey);
   }
 
   handleMouseMove(screenX: number, screenY: number) {

@@ -22,6 +22,21 @@ export class ResizeCalculator {
     };
   }
 
+  static getGroupBounds(shapes: _Shape[]): ManipulationBounds {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const shape of shapes) {
+      const b = this.getShapeManipulationBounds(shape);
+      minX = Math.min(minX, b.x, b.x + b.w);
+      minY = Math.min(minY, b.y, b.y + b.h);
+      maxX = Math.max(maxX, b.x, b.x + b.w);
+      maxY = Math.max(maxY, b.y, b.y + b.h);
+    }
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  }
+
   static resize(
     shape: _Shape,
     handle: ResizeHandle,

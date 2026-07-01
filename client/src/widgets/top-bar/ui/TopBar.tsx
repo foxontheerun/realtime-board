@@ -36,14 +36,14 @@ export function TopBar() {
     <div className="h-14 bg-white border-b border-[#E5E5E5] flex items-center justify-between px-4 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#3B82F6] flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="2" y="2" width="5" height="5" rx="1" fill="white" />
-              <rect x="9" y="2" width="5" height="5" rx="1" fill="white" />
-              <rect x="2" y="9" width="5" height="5" rx="1" fill="white" />
+          <div className="w-8 h-8 rounded-lg bg-[#16B8D4] flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <ellipse cx="8" cy="9" rx="5.5" ry="3.4" fill="#FF6A3D" />
+              <path d="M12.5 9 L17 6 L17 12 Z" fill="#FF6A3D" />
+              <circle cx="6" cy="8.2" r="0.9" fill="#fff" />
             </svg>
           </div>
-          <span className="text-[#1A1A1A]">Realtime Board</span>
+          <span className="font-logo text-[#14202B] text-lg">Koi</span>
         </div>
         <div className="h-6 w-px bg-[#E5E5E5]" />
         <input
@@ -81,7 +81,7 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="px-4 py-1.5 bg-[#3B82F6] text-white rounded-lg hover:bg-[#2563EB] transition-colors flex items-center gap-2">
+        <button className="px-4 py-1.5 bg-[#16B8D4] text-white rounded-lg hover:bg-[#0E7C99] transition-colors flex items-center gap-2">
           <Share2 className="w-4 h-4" />
           <span>Share</span>
         </button>

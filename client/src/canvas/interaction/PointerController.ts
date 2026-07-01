@@ -24,7 +24,7 @@ export class PointerController {
     private readonly callbacks: PointerCallbacks,
   ) {}
 
-  handleMouseDown(screenX: number, screenY: number) {
+  handleMouseDown(screenX: number, screenY: number, shiftKey: boolean) {
     const worldPoint = this.coordinateTransformer.screenToWorld(
       screenX,
       screenY,
@@ -48,11 +48,20 @@ export class PointerController {
       return;
     }
 
-    this.interactionManager.handleMouseDown(worldPoint, canvasPoint, scale);
+    this.interactionManager.handleMouseDown(
+      worldPoint,
+      canvasPoint,
+      scale,
+      shiftKey,
+    );
 
     const interaction = this.interactionManager.getInteraction();
 
-    if (interaction.type === "drag" || interaction.type === "resize") {
+    if (
+      interaction.type === "drag" ||
+      interaction.type === "resize" ||
+      interaction.type === "group-resize"
+    ) {
       this.collab.acquire(this.interactionManager.getSelectedIds());
       this.render.staticLayer();
       this.render.dragLayer();
@@ -103,7 +112,11 @@ export class PointerController {
 
     if (interaction.type === "pan" || interaction.type === "idle") return;
 
-    if (interaction.type === "drag" || interaction.type === "resize") {
+    if (
+      interaction.type === "drag" ||
+      interaction.type === "resize" ||
+      interaction.type === "group-resize"
+    ) {
       this.collab.renew(this.interactionManager.getSelectedIds());
       this.render.dragLayer();
       this.render.overlay();
@@ -131,7 +144,9 @@ export class PointerController {
 
     const interactionBefore = this.interactionManager.getInteraction();
     const wasDragOrResize =
-      interactionBefore.type === "drag" || interactionBefore.type === "resize";
+      interactionBefore.type === "drag" ||
+      interactionBefore.type === "resize" ||
+      interactionBefore.type === "group-resize";
 
     this.interactionManager.handleMouseUp();
 
