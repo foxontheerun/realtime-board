@@ -2,6 +2,7 @@ import { useEffect, useReducer } from "react";
 import type { CameraController } from "../../../canvas";
 import type { RemoteCursor } from "../../../canvas/types";
 import { colorFromId } from "../lib/colorFromId";
+import cursorPng from "../assets/cursor.png";
 
 interface RemoteCursorsLayerProps {
   cursors: RemoteCursor[];
@@ -41,23 +42,26 @@ export function RemoteCursorsLayer({
 }
 
 function CursorArrow({ color }: { color: string }) {
-  // Tip is at (0,0) so `translate(x, y)` puts it exactly on the pointer spot,
-  // like a native cursor. overflow: visible keeps the white outline at the tip.
   return (
-    <svg
-      width="12"
-      height="19"
-      viewBox="0 0 12 19"
-      fill="none"
-      style={{ display: "block", overflow: "visible" }}
-    >
-      <path
-        d="M0 0 L0 16 L3.5 12.7 L6 18 L8.2 17 L5.7 11.9 L10 11.9 Z"
-        fill={color}
-        stroke="black"
-        strokeWidth="1"
-        strokeLinejoin="round"
+    <div style={{ position: "relative", width: 24, height: 24 }}>
+      <img
+        src={cursorPng}
+        width={24}
+        height={24}
+        style={{ display: "block", imageRendering: "pixelated" }}
       />
-    </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundColor: color,
+          mixBlendMode: "color",
+          maskImage: `url(${cursorPng})`,
+          WebkitMaskImage: `url(${cursorPng})`,
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+        }}
+      />
+    </div>
   );
 }
